@@ -1,0 +1,32 @@
+{
+  "name": "wedding-cards",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "sequelize": "sequelize"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.0",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.0.0",
+    "ejs": "^3.1.9",
+    "ejs-mate": "^4.0.0",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "jimp": "^0.16.1",
+    "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.13.0",
+    "pg": "^8.9.0",
+    "pg-hstore": "^2.3.4",
+    "qrcode": "^1.5.1",
+    "sequelize": "^6.31.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22",
+    "sequelize-cli": "^6.6.0"
+  }
+}

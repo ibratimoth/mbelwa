@@ -1,0 +1,11 @@
+<% layout('layouts/main') -%>
+
+<h1 class="mb-3">Upload Attendees CSV</h1>
+<p>CSV should have headers: <code>name,type</code> where type is "single" or "double".</p>
+
+<form action="/attendees/upload" method="post" enctype="multipart/form-data" class="mb-3">
+  <div class="mb-3">
+    <input type="file" name="csvfile" accept=".csv" class="form-control" required>
+  </div>
+  <button class="btn btn-primary">Upload</button>
+</form>

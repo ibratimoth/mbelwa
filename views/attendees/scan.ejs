@@ -1,0 +1,165 @@
+<% layout('layouts/main') -%>
+
+<h1 class="mb-3 text-center">Scan Guest QR</h1>
+
+<div class="text-center mb-3">
+  <button id="start-scanner-btn" class="btn btn-primary">
+    <i class="bx bx-qr-scan me-1"></i> Start Scanner
+  </button>
+</div>
+
+<div id="scanner-section" class="card p-3" style="display:none; max-width:360px; margin:auto;">
+  <div id="qr-reader" class="position-relative">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+  </div>
+  <div id="scanner-alert" class="scanner-alert mt-2 text-center"></div>
+  <div class="text-center mt-2">
+    <span id="scans-remaining" class="fw-bold mb-2 d-block">Scans remaining: N/A</span>
+    <button id="stop-scanner-btn" class="btn btn-danger">
+      <i class="bx bx-x-circle me-1"></i> Stop Scanner
+    </button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+  let qrScanner;
+  const startBtn = document.getElementById("start-scanner-btn");
+  const stopBtn = document.getElementById("stop-scanner-btn");
+  const scannerSection = document.getElementById("scanner-section");
+  const scannerAlert = document.getElementById("scanner-alert");
+  const scansRemainingEl = document.getElementById("scans-remaining");
+
+  // Track currently processing QR codes to prevent multiple triggers
+  const processingQr = new Set();
+
+  function showScannerAlert(type, message) {
+    scannerAlert.className = `scanner-alert ${type}`;
+    const icon = type === 'success' ? '✅' : '❌';
+    scannerAlert.innerHTML = `<span class="icon">${icon}</span> ${message}`;
+    scannerAlert.style.display = 'flex';
+    scannerAlert.style.animation = 'slideFade 4s forwards';
+
+    const iconEl = scannerAlert.querySelector(".icon");
+    iconEl.style.animation = 'none';
+    void iconEl.offsetWidth;
+    iconEl.style.animation = 'popBounce 0.5s ease';
+
+    setTimeout(() => { scannerAlert.style.display = 'none'; }, 4000);
+  }
+
+  function startScanner() {
+    qrScanner = new Html5Qrcode("qr-reader");
+    qrScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      async (decodedText) => {
+        if (processingQr.has(decodedText)) return; // skip if already processing
+        processingQr.add(decodedText);
+
+        if ('vibrate' in navigator) navigator.vibrate(200);
+
+        try {
+          const res = await fetch('/attendees/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ qrData: decodedText })
+          });
+          const data = await res.json();
+
+          showScannerAlert(data.success ? "success" : "error", data.message || "Scan processed");
+
+          // Update scans remaining display if provided
+          if (data.scansRemaining !== undefined) {
+            scansRemainingEl.textContent = `Scans remaining: ${data.scansRemaining}`;
+          }
+
+        } catch (err) {
+          showScannerAlert("error", "Network error");
+        } finally {
+          // Unlock this QR code for next scan attempt
+          processingQr.delete(decodedText);
+        }
+      }
+    ).catch(err => showScannerAlert("error", "Failed to start scanner"));
+  }
+
+  function stopScanner() {
+    if(qrScanner) {
+      qrScanner.stop().then(() => {
+        document.getElementById("qr-reader").innerHTML = "";
+        scansRemainingEl.textContent = "Scans remaining: N/A";
+      });
+    }
+  }
+
+  // Start/Stop button handlers
+  startBtn.addEventListener("click", () => {
+    scannerSection.style.display = "block";
+    startScanner();
+    startBtn.style.display = "none";
+  });
+
+  stopBtn.addEventListener("click", () => {
+    stopScanner();
+    scannerSection.style.display = "none";
+    startBtn.style.display = "inline-block";
+  });
+</script>
+
+<style>
+  #qr-reader {
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Corner brackets */
+  .corner {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    border: 3px solid #4CAF50;
+  }
+  .corner.tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+  .corner.tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+  .corner.bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+  .corner.br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+  .scanner-alert {
+    display: none;
+    margin-top: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+
+  .scanner-alert.success { background-color: #d4edda; color: #155724; }
+  .scanner-alert.error { background-color: #f8d7da; color: #721c24; }
+
+  @keyframes slideFade {
+    0% {opacity: 0; transform: translateY(-20px);}
+    10%, 90% {opacity: 1; transform: translateY(0);}
+    100% {opacity: 0; transform: translateY(-20px);}
+  }
+
+  @keyframes popBounce {
+    0% { transform: scale(0.5); }
+    40% { transform: scale(1.3); }
+    60% { transform: scale(0.9); }
+    80% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  .scanner-alert .icon { font-size: 1.2rem; animation: popBounce 0.5s ease; }
+</style>

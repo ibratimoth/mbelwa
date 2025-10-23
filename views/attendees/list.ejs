@@ -1,0 +1,35 @@
+<% layout('layouts/main') -%>
+
+<h1 class="mb-3">Attendees</h1>
+
+<table class="table table-sm table-bordered table-hover align-middle text-nowrap">
+  <thead class="table-light">
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Phone</th>
+      <th>Card No</th>
+      <th>QR</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% guests.forEach(g => { %>
+      <tr>
+        <td><%= g.name %></td>
+        <td><%= g.type %></td>
+        <td><%= g.phone || '-' %></td>
+        <td><%= g.card_number || '-' %></td>
+        <td>
+          <% if (g.qr_code_path) { %>
+            <img src="/<%= g.qr_code_path.replace(/^public\//,'') %>" style="width:32px;height:32px" class="rounded"/>
+          <% } %>
+        </td>
+        <td class="d-flex gap-1 flex-wrap">
+          <a class="btn btn-sm btn-secondary py-0 px-1" href="/attendees/<%= g.id %>/edit">Edit</a>
+          <a class="btn btn-sm btn-success py-0 px-1" href="/attendees/<%= g.id %>/download">Download</a>
+        </td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
