@@ -32,7 +32,7 @@ async function start() {
     await sequelize.authenticate();
     console.log('✅ Database connected');
     app.listen(PORT, () =>
-      console.log(`🚀 Server running on http://localhost:${PORT}`)
+      console.log(`🚀 Server running on http://95.217.22.143:${PORT}`)
     );
   } catch (err) {
     console.error('❌ Failed to start:', err);
