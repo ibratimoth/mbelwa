@@ -12,6 +12,10 @@
     <input name="phone" value="<%= guest.phone || '' %>" class="form-control">
   </div>
   <div class="mb-3">
+    <label class="form-label">Scans</label>
+    <input name="scans" value="<%= guest.scans %>" class="form-control">
+  </div>
+  <div class="mb-3">
     <label class="form-label">Type</label>
     <select name="type" class="form-select">
       <option value="single" <%= guest.type==='single'?'selected':'' %>>Single</option>

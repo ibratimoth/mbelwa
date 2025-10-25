@@ -83,8 +83,8 @@ async function updateGuest(req, res) {
     const guest = await Guest.findByPk(req.params.id);
     if (!guest) return res.status(404).send('Guest not found');
 
-    const { name, type, phone } = req.body;
-    await guest.update({ name, type, phone });
+    const { name, type, phone, scans } = req.body;
+    await guest.update({ name, type, phone, scans });
     res.redirect('/attendees');
 }
 

@@ -15,26 +15,30 @@
 <table class="table table-sm table-bordered table-hover align-middle text-nowrap">
   <thead class="table-light">
     <tr>
+      <th style="width:50px;">S/N</th>
       <th>Name</th>
       <th>Type</th>
       <th>Phone</th>
-      <th>Card No</th>
-      <th>QR</th>
+      <!-- <th>Card No</th> -->
+      <th>Scans</th>
+      <!-- <th>QR</th> -->
       <th>Actions</th>
     </tr>
   </thead>
   <tbody id="attendeesTable">
-    <% guests.forEach(g => { %>
+    <% guests.forEach((g, i) => { %>
       <tr>
+        <td class="sn-col"><%= i + 1 %></td>
         <td><%= g.name %></td>
         <td><%= g.type %></td>
         <td><%= g.phone || '-' %></td>
-        <td><%= g.card_number || '-' %></td>
-        <td>
+        <!-- <td><%= g.card_number || '-' %></td> -->
+        <td><%= g.scans %></td>
+        <!-- <td>
           <% if (g.qr_code_path) { %>
             <img src="/<%= g.qr_code_path.replace(/^public\//,'') %>" style="width:32px;height:32px" class="rounded"/>
           <% } %>
-        </td>
+        </td> -->
         <td class="d-flex gap-1 flex-wrap">
           <a class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit" href="/attendees/<%= g.id %>/edit">
             <i class="bi bi-pencil-square"></i>
@@ -73,7 +77,11 @@
     const end = start + rowsPerPage;
 
     rows.forEach(row => row.style.display = 'none');
-    filteredRows.slice(start, end).forEach(row => row.style.display = '');
+    filteredRows.slice(start, end).forEach((row, index) => {
+      row.style.display = '';
+      // Update S/N dynamically for visible rows
+      row.querySelector('.sn-col').textContent = start + index + 1;
+    });
 
     renderPagination();
     noResults.classList.toggle('d-none', filteredRows.length > 0);
