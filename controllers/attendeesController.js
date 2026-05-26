@@ -104,7 +104,7 @@ async function downloadCard(req, res) {
         name: guest.name,
         type: guest.type,
         qrPath,
-        baseTemplateFilename: 'card_base.jpg',
+        baseTemplateFilename: 'card_base6.jpg',
         outputFilename: `${guest.id}_card.png`
     });
 

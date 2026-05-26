@@ -15,7 +15,7 @@ async function generateCardPNG({
   name,
   type,
   qrPath,
-  baseTemplateFilename = 'card_base.jpg',
+  baseTemplateFilename = 'card_base6.jpg',
   outputFilename,
 }) {
   const safeName = name || '';
@@ -48,7 +48,7 @@ async function generateCardPNG({
   const nameX = width / 2;
   
   // Adjusted Y-position: Moving it up to 35% of the height to sit ABOVE the line
-  const nameY = height * 0.35; 
+  const nameY = height * 0.57; 
   
   // Format the text as requested: "ibrahimu - Double"
   const combinedText = `${safeName} - ${typeText}`;
