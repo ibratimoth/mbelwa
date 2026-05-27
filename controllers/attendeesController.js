@@ -4,8 +4,8 @@ const fs = require('fs');
 const csv = require('csv-parser');
 //const { guest: Guest } = require('../models');
 const {
-    guest: Guest,
-    event: Event
+  guest: Guest,
+  event: Event
 } = require('../models');
 const { generateQRCodeToFile } = require('../utils/qrcode');
 const { generateCardPNG } = require('../utils/cardGenerator');
@@ -269,7 +269,7 @@ async function list(req, res) {
     guests,
     event
   });
-} 
+}
 
 async function showUploadForm(req, res) {
   const event = await Event.findByPk(req.params.eventId);
@@ -342,6 +342,11 @@ async function handleCsvUpload(req, res) {
 }
 
 async function editForm(req, res) {
+  const event = await Event.findByPk(req.params.eventId);
+  if (!event) {
+    return res.status(404).send('Event not found');
+  }
+
   const guest = await Guest.findOne({
     where: {
       id: req.params.id,
@@ -353,7 +358,7 @@ async function editForm(req, res) {
     return res.status(404).send('Guest not found');
   }
 
-  res.render('attendees/edit', { guest });
+  res.render('attendees/edit', { guest, event });
 }
 
 async function updateGuest(req, res) {
@@ -488,13 +493,13 @@ async function showScan(req, res) {
 }
 
 module.exports = {
-    list,
-    showUploadForm,
-    handleCsvUpload,
-    editForm,
-    updateGuest,
-    downloadCard,
-    scanGuest,
-    showScan,
-    createEvent
+  list,
+  showUploadForm,
+  handleCsvUpload,
+  editForm,
+  updateGuest,
+  downloadCard,
+  scanGuest,
+  showScan,
+  createEvent
 };
