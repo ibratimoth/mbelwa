@@ -1,4 +1,4 @@
-<% layout('layouts/main') -%>
+<!-- <% layout('layouts/main') -%>
 
 <h1 class="mb-3 text-center">Scan Guest QR</h1>
 
@@ -162,4 +162,79 @@
   }
 
   .scanner-alert .icon { font-size: 1.2rem; animation: popBounce 0.5s ease; }
-</style>
+</style> -->
+
+
+<% layout('layouts/main', { event: event }) -%>
+
+<h3 class="text-center mb-3">Scan Guests</h3>
+
+<div class="text-center mb-3">
+  <button id="start-scanner-btn" class="btn btn-primary">
+    <i class="bx bx-qr-scan"></i> Start Scanner
+  </button>
+</div>
+
+<div id="scanner-section" style="display:none; max-width:360px; margin:auto;">
+  <div id="qr-reader"></div>
+
+  <div id="scanner-alert" class="alert mt-2 d-none"></div>
+
+  <div class="text-center mt-2">
+    <span id="scans-remaining" class="d-block mb-2">
+      Scans remaining: -
+    </span>
+
+    <button id="stop-scanner-btn" class="btn btn-danger">
+      Stop
+    </button>
+  </div>
+</div>
+
+<script>
+  let scanner;
+
+  const startBtn = document.getElementById('start-scanner-btn');
+  const stopBtn = document.getElementById('stop-scanner-btn');
+  const section = document.getElementById('scanner-section');
+  const alertBox = document.getElementById('scanner-alert');
+  const scansEl = document.getElementById('scans-remaining');
+
+  function show(msg, type) {
+    alertBox.className = `alert alert-${type}`;
+    alertBox.innerText = msg;
+    alertBox.classList.remove('d-none');
+  }
+
+  startBtn.onclick = () => {
+    section.style.display = 'block';
+
+    scanner = new Html5Qrcode("qr-reader");
+
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      async (text) => {
+
+        const res = await fetch('/events/<%= event.id %>/scan', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ qrData: text })
+        });
+
+        const data = await res.json();
+
+        show(data.message, data.success ? 'success' : 'danger');
+
+        if (data.scansRemaining !== undefined) {
+          scansEl.innerText = `Scans remaining: ${data.scansRemaining}`;
+        }
+      }
+    );
+  };
+
+  stopBtn.onclick = () => {
+    if (scanner) scanner.stop();
+    section.style.display = 'none';
+  };
+</script>

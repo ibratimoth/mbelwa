@@ -1,4 +1,4 @@
-<% layout('layouts/main') -%>
+<!-- <% layout('layouts/main') -%>
 
 <h1 class="mb-3">Upload Attendees CSV</h1>
 <p>CSV should have headers: <code>name,type</code> where type is "single" or "double".</p>
@@ -8,4 +8,29 @@
     <input type="file" name="csvfile" accept=".csv" class="form-control" required>
   </div>
   <button class="btn btn-primary">Upload</button>
+</form> -->
+
+
+<% layout('layouts/main', { event: event }) -%>
+
+<h3 class="mb-3">Upload Guests CSV</h3>
+
+<p class="text-muted">
+  CSV format: <code>name,type,phone</code>
+</p>
+
+<form action="/events/<%= event.id %>/guests/upload"
+      method="post"
+      enctype="multipart/form-data">
+
+  <input type="file"
+         name="csvfile"
+         class="form-control mb-3"
+         accept=".csv"
+         required>
+
+  <button class="btn btn-primary">
+    Upload
+  </button>
+
 </form>

@@ -10,7 +10,11 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      // guest belongs to event
+      guest.belongsTo(models.event, {
+        foreignKey: 'event_id',
+        as: 'event'
+      });
     }
   }
   guest.init({
@@ -24,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
     type: DataTypes.ENUM('single', 'double'),
     card_number: {
       type: DataTypes.INTEGER,
-      autoIncrement: true,   
+      autoIncrement: true,
       allowNull: false,
     },
     qr_code_path: DataTypes.STRING,
@@ -32,6 +36,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0,
       allowNull: false,
+    },
+    event_id: {
+      type: DataTypes.UUID,
+      allowNull: false
     },
   }, {
     sequelize,

@@ -1,8 +1,7 @@
-<% layout('layouts/main') -%>
+<!-- <% layout('layouts/main') -%>
 
 <h1 class="mb-3">Attendees</h1>
 
-<!-- 🔍 Search Input -->
 <div class="mb-3">
   <input
     type="text"
@@ -19,9 +18,7 @@
       <th>Name</th>
       <th>Type</th>
       <th>Phone</th>
-      <!-- <th>Card No</th> -->
       <th>Scans</th>
-      <!-- <th>QR</th> -->
       <th>Actions</th>
     </tr>
   </thead>
@@ -32,13 +29,8 @@
         <td><%= g.name %></td>
         <td><%= g.type %></td>
         <td><%= g.phone || '-' %></td>
-        <!-- <td><%= g.card_number || '-' %></td> -->
         <td><%= g.scans %></td>
-        <!-- <td>
-          <% if (g.qr_code_path) { %>
-            <img src="/<%= g.qr_code_path.replace(/^public\//,'') %>" style="width:32px;height:32px" class="rounded"/>
-          <% } %>
-        </td> -->
+        
         <td class="d-flex gap-1 flex-wrap">
           <a class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit" href="/attendees/<%= g.id %>/edit">
             <i class="bi bi-pencil-square"></i>
@@ -52,15 +44,12 @@
   </tbody>
 </table>
 
-<!-- Pagination controls -->
 <nav>
   <ul class="pagination justify-content-center" id="pagination"></ul>
 </nav>
 
-<!-- Message when no results found -->
 <p id="noResults" class="text-center text-muted d-none">No attendees found.</p>
 
-<!-- 💡 Client-side Script -->
 <script>
   const searchInput = document.getElementById('searchInput');
   const table = document.getElementById('attendeesTable');
@@ -114,8 +103,95 @@
   renderTable();
 </script>
 
-<!-- Bootstrap Icons CDN -->
 <link
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-/>
+/> -->
+
+
+<% layout('layouts/main', { event: event }) -%>
+
+<h3 class="mb-3">
+  Guests
+</h3>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+
+  <input type="text"
+         id="searchInput"
+         class="form-control w-50"
+         placeholder="Search guests...">
+
+  <a href="/events/<%= event.id %>/guests/upload"
+     class="btn btn-primary">
+    <i class="bx bx-upload"></i> Upload
+  </a>
+
+</div>
+
+<table class="table table-bordered table-hover align-middle">
+  <thead class="table-light">
+    <tr>
+      <th>#</th>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Phone</th>
+      <th>Scans</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+
+  <tbody id="attendeesTable">
+    <% guests.forEach((g, i) => { %>
+      <tr>
+        <td class="sn-col"><%= i + 1 %></td>
+        <td><%= g.name %></td>
+        <td>
+          <span class="badge bg-info text-dark">
+            <%= g.type %>
+          </span>
+        </td>
+        <td><%= g.phone || '-' %></td>
+        <td><%= g.scans %></td>
+
+        <td class="d-flex gap-1">
+
+          <a class="btn btn-sm btn-outline-secondary"
+             href="/events/<%= event.id %>/guests/<%= g.id %>/edit">
+            <i class="bx bx-edit"></i>
+          </a>
+
+          <a class="btn btn-sm btn-outline-success"
+             href="/events/<%= event.id %>/guests/<%= g.id %>/download">
+            <i class="bx bx-download"></i>
+          </a>
+
+        </td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<p id="noResults" class="text-center text-muted d-none">
+  No guests found
+</p>
+
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const rows = Array.from(document.querySelectorAll('#attendeesTable tr'));
+  const noResults = document.getElementById('noResults');
+
+  searchInput.addEventListener('keyup', function () {
+    const term = this.value.toLowerCase();
+
+    let visible = 0;
+
+    rows.forEach(row => {
+      const match = row.innerText.toLowerCase().includes(term);
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+
+    noResults.classList.toggle('d-none', visible > 0);
+  });
+</script>
