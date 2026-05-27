@@ -238,11 +238,12 @@
     section.style.display = 'none';
   };
 </script> -->
-
 <script>
   let scanner;
-  let isProcessing = false;
-  let lastScanned = null;
+
+  // ⏱ minimum time between scans (2 seconds)
+  let lastScanTime = 0;
+  const SCAN_DELAY = 2000;
 
   const startBtn = document.getElementById('start-scanner-btn');
   const stopBtn = document.getElementById('stop-scanner-btn');
@@ -250,52 +251,42 @@
   const alertBox = document.getElementById('scanner-alert');
   const scansEl = document.getElementById('scans-remaining');
 
-  // ---------- SOUND ----------
   function playBeep(type) {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-    const oscillator = ctx.createOscillator();
+    const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    oscillator.connect(gain);
+    osc.connect(gain);
     gain.connect(ctx.destination);
 
-    oscillator.type = "sine";
-
-    // success = high tone, error = low tone
-    oscillator.frequency.value = type === "success" ? 800 : 200;
-
+    osc.type = "sine";
+    osc.frequency.value = type === "success" ? 800 : 200;
     gain.gain.value = 0.1;
 
-    oscillator.start();
+    osc.start();
     setTimeout(() => {
-      oscillator.stop();
+      osc.stop();
       ctx.close();
     }, 200);
   }
 
-  // ---------- FLASH EFFECT ----------
   function flash(type) {
-    const flashDiv = document.createElement("div");
+    const div = document.createElement("div");
 
-    flashDiv.style.position = "fixed";
-    flashDiv.style.top = 0;
-    flashDiv.style.left = 0;
-    flashDiv.style.width = "100%";
-    flashDiv.style.height = "100%";
-    flashDiv.style.zIndex = 9999;
-    flashDiv.style.opacity = 0.6;
+    div.style.position = "fixed";
+    div.style.top = 0;
+    div.style.left = 0;
+    div.style.width = "100%";
+    div.style.height = "100%";
+    div.style.zIndex = 9999;
+    div.style.opacity = 0.5;
+    div.style.background = type === "success" ? "green" : "red";
 
-    flashDiv.style.background = type === "success" ? "green" : "red";
+    document.body.appendChild(div);
 
-    document.body.appendChild(flashDiv);
-
-    setTimeout(() => {
-      flashDiv.remove();
-    }, 200);
+    setTimeout(() => div.remove(), 200);
   }
 
-  // ---------- ALERT ----------
   function show(msg, type) {
     alertBox.className = `alert alert-${type}`;
     alertBox.innerText = msg;
@@ -306,7 +297,6 @@
     }, 2500);
   }
 
-  // ---------- START SCANNER ----------
   startBtn.onclick = () => {
     section.style.display = 'block';
 
@@ -317,11 +307,12 @@
       { fps: 10, qrbox: 250 },
       async (text) => {
 
-        if (isProcessing) return;
-        if (text === lastScanned) return;
+        const now = Date.now();
 
-        isProcessing = true;
-        lastScanned = text;
+        // ⛔ BLOCK FAST REPEATED SCANS
+        if (now - lastScanTime < SCAN_DELAY) return;
+
+        lastScanTime = now;
 
         try {
           const res = await fetch('/events/<%= event.id %>/scan', {
@@ -334,7 +325,6 @@
 
           show(data.message, data.success ? 'success' : 'danger');
 
-          // sound + flash
           playBeep(data.success ? "success" : "error");
           flash(data.success ? "success" : "error");
 
@@ -347,16 +337,10 @@
           playBeep("error");
           flash("error");
         }
-
-        // auto unlock after short delay
-        setTimeout(() => {
-          isProcessing = false;
-        }, 1500);
       }
     );
   };
 
-  // ---------- STOP SCANNER ----------
   stopBtn.onclick = () => {
     if (scanner) scanner.stop();
     section.style.display = 'none';
