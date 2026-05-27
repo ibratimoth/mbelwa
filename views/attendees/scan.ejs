@@ -191,7 +191,7 @@
   </div>
 </div>
 
-<script>
+<!-- <script>
   let scanner;
 
   const startBtn = document.getElementById('start-scanner-btn');
@@ -233,6 +233,130 @@
     );
   };
 
+  stopBtn.onclick = () => {
+    if (scanner) scanner.stop();
+    section.style.display = 'none';
+  };
+</script> -->
+
+<script>
+  let scanner;
+  let isProcessing = false;
+  let lastScanned = null;
+
+  const startBtn = document.getElementById('start-scanner-btn');
+  const stopBtn = document.getElementById('stop-scanner-btn');
+  const section = document.getElementById('scanner-section');
+  const alertBox = document.getElementById('scanner-alert');
+  const scansEl = document.getElementById('scans-remaining');
+
+  // ---------- SOUND ----------
+  function playBeep(type) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+
+    oscillator.type = "sine";
+
+    // success = high tone, error = low tone
+    oscillator.frequency.value = type === "success" ? 800 : 200;
+
+    gain.gain.value = 0.1;
+
+    oscillator.start();
+    setTimeout(() => {
+      oscillator.stop();
+      ctx.close();
+    }, 200);
+  }
+
+  // ---------- FLASH EFFECT ----------
+  function flash(type) {
+    const flashDiv = document.createElement("div");
+
+    flashDiv.style.position = "fixed";
+    flashDiv.style.top = 0;
+    flashDiv.style.left = 0;
+    flashDiv.style.width = "100%";
+    flashDiv.style.height = "100%";
+    flashDiv.style.zIndex = 9999;
+    flashDiv.style.opacity = 0.6;
+
+    flashDiv.style.background = type === "success" ? "green" : "red";
+
+    document.body.appendChild(flashDiv);
+
+    setTimeout(() => {
+      flashDiv.remove();
+    }, 200);
+  }
+
+  // ---------- ALERT ----------
+  function show(msg, type) {
+    alertBox.className = `alert alert-${type}`;
+    alertBox.innerText = msg;
+    alertBox.classList.remove('d-none');
+
+    setTimeout(() => {
+      alertBox.classList.add('d-none');
+    }, 2500);
+  }
+
+  // ---------- START SCANNER ----------
+  startBtn.onclick = () => {
+    section.style.display = 'block';
+
+    scanner = new Html5Qrcode("qr-reader");
+
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      async (text) => {
+
+        if (isProcessing) return;
+        if (text === lastScanned) return;
+
+        isProcessing = true;
+        lastScanned = text;
+
+        try {
+          const res = await fetch('/events/<%= event.id %>/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ qrData: text })
+          });
+
+          const data = await res.json();
+
+          show(data.message, data.success ? 'success' : 'danger');
+
+          // sound + flash
+          playBeep(data.success ? "success" : "error");
+          flash(data.success ? "success" : "error");
+
+          if (data.scansRemaining !== undefined) {
+            scansEl.innerText = `Scans remaining: ${data.scansRemaining}`;
+          }
+
+        } catch (err) {
+          show("Network error", "danger");
+          playBeep("error");
+          flash("error");
+        }
+
+        // auto unlock after short delay
+        setTimeout(() => {
+          isProcessing = false;
+        }, 1500);
+      }
+    );
+  };
+
+  // ---------- STOP SCANNER ----------
   stopBtn.onclick = () => {
     if (scanner) scanner.stop();
     section.style.display = 'none';
