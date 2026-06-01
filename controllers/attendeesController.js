@@ -271,9 +271,7 @@ async function sendScannerLink(req, res) {
       });
     }
 
-    const scanLink =
-      `${req.protocol}://${req.get('host')}/scanner/${event.scanner_token}`;
-
+    const scanLink = `${process.env.APP_URL}/scanner/${event.scanner_token}`;
     const messages = numbers.map((phone, index) => {
 
       // clean input
