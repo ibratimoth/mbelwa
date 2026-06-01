@@ -35,7 +35,11 @@ module.exports = (sequelize, DataTypes) => {
 
     event_date: DataTypes.DATE,
 
-    card_template: DataTypes.STRING
+    card_template: DataTypes.STRING,
+
+    layout_config: DataTypes.JSON,
+
+    scanner_token: DataTypes.STRING,
 
   }, {
 

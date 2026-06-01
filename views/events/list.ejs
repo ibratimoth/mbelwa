@@ -43,7 +43,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
 
-      <form method="post" action="/events/create">
+      <form method="post" action="/events/create" enctype="multipart/form-data">
 
         <div class="modal-header">
           <h5>Create Event</h5>
@@ -56,6 +56,8 @@
           <input class="form-control mb-2" name="bride_name" placeholder="Bride Name">
           <input class="form-control mb-2" name="venue" placeholder="Venue">
           <input class="form-control mb-2" type="date" name="event_date">
+          <input type="file" name="card_template" accept="image/*" class="form-control" placeholder="Card Template">
+          <img id="templatePreview" class="img-fluid mt-3 border rounded d-block mx-auto" style="max-height:400px; display:none;">
 
         </div>
 
@@ -68,3 +70,22 @@
     </div>
   </div>
 </div>
+
+<script>
+document
+  .querySelector('[name="card_template"]')
+  .addEventListener('change', function () {
+
+    const file = this.files[0];
+
+    if (!file) return;
+
+    const preview =
+      document.getElementById('templatePreview');
+
+    preview.src =
+      URL.createObjectURL(file);
+
+    preview.style.display = 'block';
+  });
+</script>

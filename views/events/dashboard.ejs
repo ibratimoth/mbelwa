@@ -1,61 +1,205 @@
 <% layout('layouts/main', { event: event }) %>
 
-<div class="mb-4">
+  <div class="mb-4">
 
-  <h3><%= event.title %></h3>
+    <h3>
+      <%= event.title %>
+    </h3>
 
-  <p class="text-muted">
-    <%= event.groom_name %> ❤ <%= event.bride_name %>
-  </p>
+    <p class="text-muted">
+      <%= event.groom_name %> ❤ <%= event.bride_name %>
+    </p>
 
-  <p class="text-muted">
-    <i class="bx bx-map"></i> <%= event.venue %>
-  </p>
+    <p class="text-muted">
+      <i class="bx bx-map"></i>
+      <%= event.venue %>
+    </p>
+
+  </div>
+
+  <!-- TEMPLATE PREVIEW -->
+  <% if(event.card_template){ %>
+
+    <div class="card shadow-sm mb-4">
+
+      <div class="card-header">
+        Card Template Preview
+      </div>
+
+      <div class="card-body text-center">
+
+        <img src="/public/templates/<%= event.card_template %>" class="img-fluid rounded border"
+          style="max-height:500px;" alt="Card Template">
+
+      </div>
+      <a href="/events/<%= event.id %>/editor" class="btn btn-warning">
+        Edit Card Layout
+      </a>
+    </div>
+
+    <% } %>
+
+      <div class="row">
+
+        <div class="col-md-4">
+          <div class="card p-3 shadow-sm">
+            <h6>Total Guests</h6>
+            <h3>
+              <%= stats.totalGuests %>
+            </h3>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card p-3 shadow-sm">
+            <h6>Scanned Guests</h6>
+            <h3>
+              <%= stats.scannedGuests %>
+            </h3>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card p-3 shadow-sm">
+            <h6>Double Entry Guests</h6>
+            <h3>
+              <%= stats.doubleGuests %>
+            </h3>
+          </div>
+        </div>
+
+      </div>
+
+      <hr>
+
+<div class="card p-3 mt-3">
+
+  <h5>Send Scanner Link</h5>
+
+  <!-- Manual phone input only -->
+  <input
+    type="text"
+    id="phoneInput"
+    class="form-control"
+    placeholder="Enter numbers separated by commas (e.g. 071..., 255...)"
+  />
+
+  <button id="sendBtn" class="btn btn-primary mt-3" onclick="sendBulkScannerLink()">
+    <span id="btnText">Send Scanner Link</span>
+    <span id="spinner" class="spinner-border spinner-border-sm d-none"></span>
+  </button>
+
+  <div id="smsStatus" class="mt-2"></div>
 
 </div>
 
-<div class="row">
+      <div class="d-flex gap-2 mt-3">
 
-  <div class="col-md-4">
-    <div class="card p-3 shadow-sm">
-      <h6>Total Guests</h6>
-      <h3><%= stats.totalGuests %></h3>
-    </div>
-  </div>
+        <a href="/events/<%= event.id %>/guests" class="btn btn-primary">
+          Manage Guests
+        </a>
 
-  <div class="col-md-4">
-    <div class="card p-3 shadow-sm">
-      <h6>Scanned Guests</h6>
-      <h3><%= stats.scannedGuests %></h3>
-    </div>
-  </div>
+        <a href="/events/<%= event.id %>/guests/upload" class="btn btn-secondary">
+          Upload CSV
+        </a>
 
-  <div class="col-md-4">
-    <div class="card p-3 shadow-sm">
-      <h6>Double Entry Guests</h6>
-      <h3><%= stats.doubleGuests %></h3>
-    </div>
-  </div>
+        <a href="/events/<%= event.id %>/scan" class="btn btn-success">
+          Scan QR
+        </a>
 
-</div>
+        <form action="/events/<%= event.id %>/send-invite" method="POST">
+          <input type="hidden" name="eventTitle" value="<%= event.title %>">
 
-<hr>
+          <button type="submit" class="btn btn-warning" onclick="return confirm('Send SMS invites to all guests?')">
+            Send Invitations
+          </button>
+        </form>
 
-<div class="d-flex gap-2 mt-3">
+        <button id="generateScannerBtn" class="btn btn-warning">
 
-  <a href="/events/<%= event.id %>/guests"
-     class="btn btn-primary">
-    Manage Guests
-  </a>
+          Generate Scanner Link
 
-  <a href="/events/<%= event.id %>/guests/upload"
-     class="btn btn-secondary">
-    Upload CSV
-  </a>
+        </button>
 
-  <a href="/events/<%= event.id %>/scan"
-     class="btn btn-success">
-    Scan QR
-  </a>
+      </div>
 
-</div>
+      <script>
+
+document
+.getElementById('generateScannerBtn')
+.addEventListener('click', async () => {
+
+  const res = await fetch(
+    '/events/<%= event.id %>/generate-scanner-link',
+    {
+      method:'POST'
+    }
+  );
+
+  const data = await res.json();
+
+  if(data.success){
+
+    prompt(
+      'Scanner Link',
+      data.scanLink
+    );
+
+  }
+});
+
+</script>
+
+<script>
+const eventId = "<%= event.id %>";
+
+async function sendBulkScannerLink() {
+
+  const input = document.getElementById("phoneInput");
+  const btnText = document.getElementById("btnText");
+  const spinner = document.getElementById("spinner");
+  const status = document.getElementById("smsStatus");
+
+  // split numbers
+  const numbers = input.value
+    .split(",")
+    .map(n => n.trim())
+    .filter(Boolean);
+
+  if (!numbers.length) {
+    status.innerHTML = "<span class='text-danger'>Please enter at least one number</span>";
+    return;
+  }
+
+  // UI loading state
+  btnText.innerText = "Sending...";
+  spinner.classList.remove("d-none");
+
+  try {
+
+    const res = await fetch(`/events/${eventId}/send-scanner-link`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ numbers })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      status.innerHTML = `<span class="text-success">${data.message}</span>`;
+    } else {
+      status.innerHTML = `<span class="text-danger">${data.message}</span>`;
+    }
+
+  } catch (err) {
+    console.error(err);
+    status.innerHTML = "<span class='text-danger'>Failed to send SMS</span>";
+  }
+
+  // reset UI
+  btnText.innerText = "Send Scanner Link";
+  spinner.classList.add("d-none");
+}
+</script>

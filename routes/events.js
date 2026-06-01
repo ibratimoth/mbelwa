@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { event: Event, guest: Guest } = require('../models');
+const { generatePreviewCard } = require('../utils/cardGenerator');
+
 
 /**
  * EVENT DASHBOARD (single event view)
@@ -11,6 +13,8 @@ router.get('/events/:eventId', async (req, res) => {
   if (!event) {
     return res.status(404).send('Event not found');
   }
+
+  const previewCardPath = await generatePreviewCard(event);
 
   const totalGuests = await Guest.count({
     where: { event_id: event.id }
@@ -30,13 +34,16 @@ router.get('/events/:eventId', async (req, res) => {
     }
   });
 
+  console.log(`Event ${event.id} stats: Total=${totalGuests}, Scanned=${scannedGuests}, Double=${doubleGuests}`);
+
   res.render('events/dashboard', {
     event,
     stats: {
       totalGuests,
       scannedGuests,
       doubleGuests
-    }
+    },
+    previewCardPath
   });
 });
 

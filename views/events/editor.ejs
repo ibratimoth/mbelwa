@@ -1,0 +1,252 @@
+<!-- <% layout('layouts/main', { event: event }) %>
+
+<div id="canvas" style="position:relative; display:inline-block;">
+  <img
+    id="preview"
+    style="width:100%; max-height:600px; display:block;"
+  />
+
+  <div id="nameBox" class="draggable">Name</div>
+  <div id="qrBox" class="draggable">QR</div>
+</div>
+
+<style>
+  .draggable {
+    position: absolute;
+    cursor: grab;
+    background: rgba(0,255,0,0.2);
+    border: 1px dashed green;
+    padding: 5px;
+    user-select: none;
+  }
+</style>
+
+<script>
+  const eventId = "<%= event.id %>";
+  let layout = <%- JSON.stringify(event.layout_config || {}) %>;
+
+  const preview = document.getElementById("preview");
+  const nameBox = document.getElementById("nameBox");
+  const qrBox = document.getElementById("qrBox");
+  const canvas = document.getElementById("canvas");
+
+  preview.src = "/public/templates/<%= event.card_template %>";
+
+
+  function makeDraggable(el, keyX, keyY) {
+    let dragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    el.addEventListener("mousedown", (e) => {
+      dragging = true;
+      offsetX = e.clientX - el.offsetLeft;
+      offsetY = e.clientY - el.offsetTop;
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!dragging) return;
+
+      const rect = canvas.getBoundingClientRect();
+
+      let x = e.clientX - rect.left - offsetX;
+      let y = e.clientY - rect.top - offsetY;
+
+      x = Math.max(0, x);
+      y = Math.max(0, y);
+
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+
+      layout[keyX] = x;
+      layout[keyY] = y;
+
+      console.log("LAYOUT UPDATED:", layout)
+      saveLayout();
+    });
+
+    document.addEventListener("mouseup", () => {
+      dragging = false;
+    });
+  }
+
+  let saveTimeout;
+
+  function saveLayout() {
+    clearTimeout(saveTimeout);
+
+    saveTimeout = setTimeout(() => {
+      fetch(`/events/${eventId}/layout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ layout_config: layout })
+      });
+    }, 300);
+  }
+
+  makeDraggable(nameBox, "nameX", "nameY");
+  makeDraggable(qrBox, "qrX", "qrY");
+
+</script> -->
+
+<% layout('layouts/main', { event: event }) %>
+
+<div class="text-center">
+
+  <div id="canvas">
+
+    <img
+      id="preview"
+      src="/public/templates/<%= event.card_template %>"
+      alt="Template"
+    />
+
+    <div id="nameBox" class="draggable">
+      John Doe - Double
+    </div>
+
+    <div id="qrBox" class="draggable">
+      QR Code
+    </div>
+
+  </div>
+
+</div>
+
+<style>
+  #canvas {
+    position: relative;
+    display: inline-block;
+  }
+
+  #preview {
+    display: block;
+    max-height: 600px;
+    width: auto;
+  }
+
+  #nameBox {
+  font-size: 12px;
+  padding: 3px 6px;
+  line-height: 1.2;
+}
+
+  .draggable {
+    position: absolute;
+    cursor: grab;
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px dashed green;
+    padding: 5px;
+    user-select: none;
+    z-index: 1000;
+  }
+</style>
+
+<script>
+  const eventId = "<%= event.id %>";
+
+  let layout = <%- JSON.stringify(event.layout_config || {}) %>;
+
+  const preview = document.getElementById("preview");
+  const nameBox = document.getElementById("nameBox");
+  const qrBox = document.getElementById("qrBox");
+
+  // =========================
+  // AUTO RESIZE CANVAS TO IMAGE
+  // =========================
+  preview.onload = () => {
+    nameBox.style.left = (layout.nameX ?? 150) + "px";
+    nameBox.style.top = (layout.nameY ?? 300) + "px";
+
+    qrBox.style.left = (layout.qrX ?? 450) + "px";
+    qrBox.style.top = (layout.qrY ?? 80) + "px";
+  };
+
+  // =========================
+  // SAVE LAYOUT (DEBOUNCED)
+  // =========================
+  let saveTimeout;
+
+function saveLayout() {
+  clearTimeout(saveTimeout);
+
+  saveTimeout = setTimeout(() => {
+
+    const previewRect = preview.getBoundingClientRect();
+
+    const scaleX = preview.naturalWidth / previewRect.width;
+    const scaleY = preview.naturalHeight / previewRect.height;
+
+    const normalizedLayout = {
+      nameX: layout.nameX * scaleX,
+      nameY: layout.nameY * scaleY,
+      qrX: layout.qrX * scaleX,
+      qrY: layout.qrY * scaleY
+    };
+
+    fetch(`/events/${eventId}/layout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ layout_config: normalizedLayout })
+    });
+
+  }, 300);
+}
+
+  // =========================
+  // DRAG FUNCTION (FIXED X + Y)
+  // =========================
+  function makeDraggable(el, keyX, keyY) {
+
+    let dragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    el.addEventListener("mousedown", (e) => {
+
+      dragging = true;
+
+      const rect = el.getBoundingClientRect();
+
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+
+      el.style.cursor = "grabbing";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+
+      if (!dragging) return;
+
+      const rect = preview.getBoundingClientRect();
+
+      let x = e.clientX - rect.left - offsetX;
+      let y = e.clientY - rect.top - offsetY;
+
+      x = Math.max(0, x);
+      y = Math.max(0, y);
+
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+
+      layout[keyX] = x;
+      layout[keyY] = y;
+
+      console.log("LAYOUT UPDATED:", layout);
+
+      saveLayout();
+    });
+
+    document.addEventListener("mouseup", () => {
+      dragging = false;
+      el.style.cursor = "grab";
+    });
+  }
+
+  // =========================
+  // INIT DRAGGABLE ELEMENTS
+  // =========================
+  makeDraggable(nameBox, "nameX", "nameY");
+  makeDraggable(qrBox, "qrX", "qrY");
+
+</script>

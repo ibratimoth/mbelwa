@@ -8,7 +8,9 @@
     "sequelize": "sequelize"
   },
   "dependencies": {
+    "axios": "^1.16.1",
     "bootstrap": "^5.3.0",
+    "crypto": "^1.0.1",
     "csv-parser": "^3.0.0",
     "dotenv": "^16.0.0",
     "ejs": "^3.1.9",

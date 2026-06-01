@@ -1,0 +1,37 @@
+const axios = require('axios');
+
+ require('dotenv').config();
+
+const BASE_URL = process.env.NEXTSMS_BASE_URL;
+const TOKEN = process.env.NEXTSMS_TOKEN;
+const SENDER = process.env.NEXTSMS_SENDER;
+
+async function sendBulkSMS(messages) {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/sms/v2/text/multi`,
+      {
+        messages,
+        flash: 0,
+        reference: `ref-${Date.now()}`
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${TOKEN}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (err) {
+    console.error("SMS ERROR:", err.response?.data || err.message);
+    throw err;
+  }
+}
+
+module.exports = {
+  sendBulkSMS,
+  SENDER
+};

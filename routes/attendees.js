@@ -44,15 +44,30 @@ const {
   downloadCard,
   scanGuest,
   showScan,
-  createEvent
+  createEvent,
+  previewCard,
+  updateLayoutConfig,
+  showEditor,
+  sendInvite,
+  generateScannerLink,
+  showPublicScanner,
+  scanGuestByToken,
+  sendScannerLink
 } = require('../controllers/attendeesController');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
 
 const storage = multer.diskStorage({
+
   destination: (req, file, cb) => {
+    console.log('Uploading file:', file.fieldname, file.originalname);
+    if (file.fieldname === 'card_template') {
+      return cb(null, 'public/templates');
+    }
+
     cb(null, UPLOAD_DIR);
   },
+
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
   }
@@ -65,10 +80,14 @@ const upload = multer({ storage });
  * EVENT-SCOPED GUEST ROUTES
  * =========================
  */
-
+router.post('/events/:id/send-invite', sendInvite);
 // List guests for an event
 router.get('/events/:eventId/guests', list);
-router.post('/events/create', createEvent);
+router.post('/events/create', upload.single('card_template'), createEvent);
+
+router.get('/events/:id/preview', previewCard);
+router.post('/events/:id/layout', updateLayoutConfig);
+router.get('/events/:id/editor', showEditor);
 
 // Upload guests
 router.get('/events/:eventId/guests/upload', showUploadForm);
@@ -84,5 +103,25 @@ router.get('/events/:eventId/guests/:id/download', downloadCard);
 // Scan (QR validation)
 router.get('/events/:eventId/scan', showScan);
 router.post('/events/:eventId/scan', scanGuest);
+
+// Generate scanner link
+router.post(
+  '/events/:id/generate-scanner-link',
+  generateScannerLink
+);
+
+// Public scanner
+router.get(
+  '/scanner/:token',
+  showPublicScanner
+);
+
+// Scan via token
+router.post(
+  '/scanner/:token/scan',
+  scanGuestByToken
+);
+
+router.post('/events/:id/send-scanner-link', sendScannerLink);
 
 module.exports = router;
