@@ -4,195 +4,6 @@
 
   <title><%= event.title %> - Scanner</title>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
-  <style>
-    body {
-      background: #f8f9fa;
-    }
-
-    #qr-reader {
-      width: 100%;
-      max-width: 360px;
-      margin: auto;
-    }
-
-    .scanner-box {
-      max-width: 420px;
-      margin: 40px auto;
-      text-align: center;
-    }
-  </style>
-
-</head>
-
-<body>
-
-<div class="scanner-box">
-
-  <h3 class="mb-2">
-    <%= event.title %>
-  </h3>
-
-  <p class="text-muted mb-3">
-    Event QR Scanner
-  </p>
-
-  <button id="start-scanner-btn" class="btn btn-primary mb-3">
-    Start Scanner
-  </button>
-
-  <div id="scanner-section" style="display:none;">
-
-    <div id="qr-reader"></div>
-
-    <div id="scanner-alert" class="alert mt-3 d-none"></div>
-
-    <div class="mt-3">
-
-      <div id="scans-remaining" class="mb-2 text-muted">
-        Ready
-      </div>
-
-      <button id="stop-scanner-btn" class="btn btn-danger">
-        Stop Scanner
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-<script>
-
-let scanner;
-let lastScanTime = 0;
-const SCAN_DELAY = 2000;
-
-const startBtn = document.getElementById('start-scanner-btn');
-const stopBtn = document.getElementById('stop-scanner-btn');
-const section = document.getElementById('scanner-section');
-const alertBox = document.getElementById('scanner-alert');
-const scansEl = document.getElementById('scans-remaining');
-
-function show(msg, type) {
-  alertBox.className = `alert alert-${type}`;
-  alertBox.innerText = msg;
-  alertBox.classList.remove('d-none');
-
-  setTimeout(() => {
-    alertBox.classList.add('d-none');
-  }, 2500);
-}
-
-function playBeep(type) {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-
-  osc.type = "sine";
-  osc.frequency.value = type === "success" ? 800 : 200;
-  gain.gain.value = 0.1;
-
-  osc.start();
-  setTimeout(() => {
-    osc.stop();
-    ctx.close();
-  }, 200);
-}
-
-function flash(type) {
-  const div = document.createElement("div");
-
-  div.style.position = "fixed";
-  div.style.top = 0;
-  div.style.left = 0;
-  div.style.width = "100%";
-  div.style.height = "100%";
-  div.style.zIndex = 9999;
-  div.style.opacity = 0.4;
-  div.style.background = type === "success" ? "green" : "red";
-
-  document.body.appendChild(div);
-
-  setTimeout(() => div.remove(), 200);
-}
-
-startBtn.onclick = () => {
-
-  section.style.display = 'block';
-
-  scanner = new Html5Qrcode("qr-reader");
-
-  scanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-
-    async (text) => {
-
-      const now = Date.now();
-      if (now - lastScanTime < SCAN_DELAY) return;
-      lastScanTime = now;
-
-      try {
-
-        const res = await fetch(
-          '/scanner/<%= event.scanner_token %>/scan',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ qrData: text })
-          }
-        );
-
-        const data = await res.json();
-
-        show(data.message, data.success ? 'success' : 'danger');
-
-        playBeep(data.success ? "success" : "error");
-        flash(data.success ? "success" : "error");
-
-        if (data.scansRemaining !== undefined) {
-          scansEl.innerText =
-            `Scans remaining: ${data.scansRemaining}`;
-        }
-
-      } catch (err) {
-        show("Network error", "danger");
-        playBeep("error");
-        flash("error");
-      }
-
-    }
-  );
-};
-
-stopBtn.onclick = () => {
-  if (scanner) scanner.stop();
-  section.style.display = 'none';
-};
-
-</script>
-
-</body>
-</html> -->
-
-
-<!DOCTYPE html>
-<html>
-<head>
-
-  <title><%= event.title %> - Scanner</title>
-
-  <!-- IMPORTANT FOR MOBILE -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -371,6 +182,303 @@ stopBtn.onclick = () => {
   section.style.display = 'none';
 };
 
+</script>
+
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><%= event.title %> — Remote Ticket Validator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+  
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    :root {
+      --delle-teal: #0e6171;
+      --delle-gold: #e0a21e;
+      --delle-dark: #212529;
+      --bg-light: #f8f9fa;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-light);
+      font-family: system-ui, -apple-system, sans-serif;
+      color: var(--delle-dark);
+      width: 100%;
+      height: 100%;
+    }
+
+    .scanner-container {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    /* Elegant Camera Frame Housing Box */
+    .viewfinder-wrapper {
+      position: relative;
+      background-color: #111;
+      border-radius: 16px;
+      padding: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    #qr-reader {
+      width: 100% !important;
+      border: none !important;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #qr-reader video {
+      object-fit: cover !important;
+      width: 100% !important;
+      max-height: 340px;
+    }
+
+    /* Modern Targeted Viewfinder Corners */
+    .corner-target {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border: 4px solid var(--delle-teal);
+      z-index: 10;
+    }
+    .tl { top: 14px; left: 14px; border-right: none; border-bottom: none; border-top-left-radius: 6px; }
+    .tr { top: 14px; right: 14px; border-left: none; border-bottom: none; border-top-right-radius: 6px; }
+    .bl { bottom: 14px; left: 14px; border-right: none; border-top: none; border-bottom-left-radius: 6px; }
+    .br { bottom: 14px; right: 14px; border-left: none; border-top: none; border-bottom-right-radius: 6px; }
+
+    /* Animated Scanning HUD Bar overlay line */
+    .laser-line {
+      position: absolute;
+      height: 3px;
+      width: calc(100% - 28px);
+      left: 14px;
+      background: linear-gradient(90deg, rgba(14,97,113,0) 0%, rgba(14,97,113,1) 50%, rgba(14,97,113,0) 100%);
+      box-shadow: 0 0 10px var(--delle-teal);
+      z-index: 9;
+      animation: scanLaser 2.2s infinite ease-in-out;
+    }
+
+    @keyframes scanLaser {
+      0% { top: 16px; }
+      50% { top: calc(100% - 20px); }
+      100% { top: 16px; }
+    }
+
+    /* Premium Dynamic Feedback Screen Rings Overlays */
+    .screen-pulse-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 99999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.1s ease-in-out;
+    }
+    .pulse-success {
+      box-shadow: inset 0 0 80px rgba(25, 135, 84, 0.6);
+      background-color: rgba(25, 135, 84, 0.08);
+      opacity: 1;
+    }
+    .pulse-error {
+      box-shadow: inset 0 0 80px rgba(220, 53, 69, 0.6);
+      background-color: rgba(220, 53, 69, 0.08);
+      opacity: 1;
+    }
+
+    /* Brand Custom Style overrides */
+    .btn-delle-teal {
+      background-color: var(--delle-teal);
+      color: #ffffff;
+      border: none;
+    }
+    .btn-delle-teal:hover, .btn-delle-teal:active {
+      background-color: #0a4955;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+<div class="scanner-container">
+
+  <div class="text-center mb-4">
+    <div class="d-inline-flex p-3 bg-white rounded-circle shadow-sm text-muted mb-2">
+      <i class="bx bx-shield-quarter fs-3" style="color: var(--delle-teal);"></i>
+    </div>
+    <h3 class="fw-bold mb-1 text-dark"><%= event.title %></h3>
+    <span class="badge text-uppercase tracking-wider px-2.5 py-1.5 bg-white text-secondary border shadow-xs">Gate Ticket Validator</span>
+  </div>
+
+  <div id="init-panel" class="card border-0 bg-white p-4 text-center shadow-sm rounded-4 mb-3">
+    <p class="text-muted small mb-4">
+      Launch the secure hardware verification interface to begin tracking, verifying, and logging guest barcodes at the door.
+    </p>
+    <button id="start-scanner-btn" class="btn btn-delle-teal w-100 py-2.5 fw-medium shadow-sm d-flex align-items-center justify-content-center gap-2 rounded-3">
+      <i class="bx bx-camera fs-5"></i> Initialize Lens Scanner
+    </button>
+  </div>
+
+  <div id="scanner-section" style="display: none;">
+    
+    <div class="viewfinder-wrapper mb-3">
+      <div class="laser-line"></div>
+      <div class="corner-target tl"></div>
+      <div class="corner-target tr"></div>
+      <div class="corner-target bl"></div>
+      <div class="corner-target br"></div>
+      
+      <div id="qr-reader"></div>
+    </div>
+
+    <div class="card border-0 bg-white p-3 shadow-sm rounded-4 text-center">
+      
+      <div class="mb-3">
+        <span id="scans-remaining" class="d-block py-1.5 px-3 bg-light rounded-3 font-monospace text-secondary small border">
+          Scans remaining: Awaiting pass token...
+        </span>
+      </div>
+
+      <div id="scanner-alert" class="alert d-flex align-items-center justify-content-center gap-2 py-2.5 px-3 mb-3 d-none fw-medium small"></div>
+
+      <button id="stop-scanner-btn" class="btn btn-outline-danger w-100 py-2 fw-medium d-flex align-items-center justify-content-center gap-1 rounded-3">
+        <i class="bx bx-power-off"></i> Turn Off Camera Device
+      </button>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+let scanner;
+let lastScanTime = 0;
+const SCAN_DELAY = 2000;
+
+const startBtn = document.getElementById('start-scanner-btn');
+const stopBtn = document.getElementById('stop-scanner-btn');
+const initPanel = document.getElementById('init-panel');
+const section = document.getElementById('scanner-section');
+const alertBox = document.getElementById('scanner-alert');
+const scansEl = document.getElementById('scans-remaining');
+
+function showMessage(msg, type) {
+  alertBox.className = `alert alert-${type === 'success' ? 'success' : 'danger'} d-flex align-items-center justify-content-center gap-2 py-2.5 px-3 mb-3`;
+  
+  const statusIcon = type === 'success' ? '<i class="bx bx-check-circle fs-5"></i>' : '<i class="bx bx-x-circle fs-5"></i>';
+  alertBox.innerHTML = `${statusIcon} <span>${msg}</span>`;
+  alertBox.classList.remove('d-none');
+
+  setTimeout(() => {
+    alertBox.classList.add('d-none');
+  }, 2800);
+}
+
+function playBeep(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.type = "sine";
+    osc.frequency.value = type === "success" ? 840 : 240; // Crisp bell notification tone vs warning drone hum
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.2);
+  } catch (e) {
+    console.warn("Audio Context activation blocked by client permissions", e);
+  }
+}
+
+function flashScreenBorder(type) {
+  const pulseDiv = document.createElement("div");
+  pulseDiv.className = `screen-pulse-overlay pulse-${type}`;
+  document.body.appendChild(pulseDiv);
+
+  setTimeout(() => {
+    pulseDiv.style.opacity = "0";
+    setTimeout(() => pulseDiv.remove(), 100);
+  }, 300);
+}
+
+startBtn.onclick = () => {
+  initPanel.style.display = 'none';
+  section.style.display = 'block';
+
+  scanner = new Html5Qrcode("qr-reader");
+
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 12, qrbox: { width: 240, height: 240 } },
+    async (text) => {
+      const now = Date.now();
+      if (now - lastScanTime < SCAN_DELAY) return;
+      lastScanTime = now;
+
+      try {
+        const res = await fetch(
+          '/scanner/<%= event.scanner_token %>/scan',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ qrData: text })
+          }
+        );
+
+        const data = await res.json();
+
+        showMessage(data.message, data.success ? 'success' : 'danger');
+        playBeep(data.success ? "success" : "error");
+        flashScreenBorder(data.success ? "success" : "error");
+
+        if (data.scansRemaining !== undefined) {
+          scansEl.innerText = `Scans remaining on current pass token: ${data.scansRemaining}`;
+        }
+
+      } catch (err) {
+        showMessage("Network communication channel offline", "danger");
+        playBeep("error");
+        flashScreenBorder("error");
+      }
+    }
+  ).catch(err => {
+    console.error("Hardware lens setup threw error exceptions", err);
+    initPanel.style.display = 'block';
+    section.style.display = 'none';
+    alert("Camera access was denied or the device is busy.");
+  });
+};
+
+stopBtn.onclick = () => {
+  if (scanner) {
+    scanner.stop().then(() => {
+      initPanel.style.display = 'block';
+      section.style.display = 'none';
+      scansEl.innerText = "Scans remaining: -";
+    }).catch(err => console.error("Error stopping tracking camera hardware system gracefully", err));
+  } else {
+    initPanel.style.display = 'block';
+    section.style.display = 'none';
+  }
+};
 </script>
 
 </body>

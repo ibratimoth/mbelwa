@@ -1,4 +1,4 @@
-<% layout('layouts/main', { event: event }) -%>
+<!-- <% layout('layouts/main', { event: event }) -%>
 
 <h3 class="text-center mb-3">Scan Guests</h3>
 
@@ -24,57 +24,9 @@
   </div>
 </div>
 
-<!-- <script>
-  let scanner;
-
-  const startBtn = document.getElementById('start-scanner-btn');
-  const stopBtn = document.getElementById('stop-scanner-btn');
-  const section = document.getElementById('scanner-section');
-  const alertBox = document.getElementById('scanner-alert');
-  const scansEl = document.getElementById('scans-remaining');
-
-  function show(msg, type) {
-    alertBox.className = `alert alert-${type}`;
-    alertBox.innerText = msg;
-    alertBox.classList.remove('d-none');
-  }
-
-  startBtn.onclick = () => {
-    section.style.display = 'block';
-
-    scanner = new Html5Qrcode("qr-reader");
-
-    scanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      async (text) => {
-
-        const res = await fetch('/events/<%= event.id %>/scan', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ qrData: text })
-        });
-
-        const data = await res.json();
-
-        show(data.message, data.success ? 'success' : 'danger');
-
-        if (data.scansRemaining !== undefined) {
-          scansEl.innerText = `Scans remaining: ${data.scansRemaining}`;
-        }
-      }
-    );
-  };
-
-  stopBtn.onclick = () => {
-    if (scanner) scanner.stop();
-    section.style.display = 'none';
-  };
-</script> -->
 <script>
   let scanner;
 
-  // ⏱ minimum time between scans (2 seconds)
   let lastScanTime = 0;
   const SCAN_DELAY = 2000;
 
@@ -142,7 +94,6 @@
 
         const now = Date.now();
 
-        // ⛔ BLOCK FAST REPEATED SCANS
         if (now - lastScanTime < SCAN_DELAY) return;
 
         lastScanTime = now;
@@ -177,5 +128,250 @@
   stopBtn.onclick = () => {
     if (scanner) scanner.stop();
     section.style.display = 'none';
+  };
+</script> -->
+
+<% layout('layouts/main', { event: event }) -%>
+
+<div class="row justify-content-center mb-5">
+  <div class="col-md-6 col-lg-5">
+    
+    <!-- PAGE TITLE HEADER BLOCK -->
+    <div class="text-center mb-4">
+      <div class="d-inline-flex p-3 bg-white rounded-circle shadow-sm text-secondary mb-2">
+        <i class="bx bx-qr-scan fs-2"></i>
+      </div>
+      <h3 class="fw-bold text-dark mb-1">Gate Access Verification</h3>
+      <span class="text-muted small"><%= event.title %> — Live Authentication Stream</span>
+    </div>
+
+    <!-- INITIAL TRIGGER INITIALIZER CONTROL PANEL -->
+    <div id="setup-panel" class="card border-0 bg-white p-4 shadow-sm text-center mb-3">
+      <p class="text-muted small px-2">
+        Initialize the system camera framework to scan incoming digital guest vouchers and cross-check real-time validation logs.
+      </p>
+      <button id="start-scanner-btn" class="btn btn-delle-teal w-100 py-2.5 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm fw-medium">
+        <i class="bx bx-video fs-5"></i> Activate Camera Scanner
+      </button>
+    </div>
+
+    <!-- LIVE SCANNER INTERACTIVE VIEWFINDER HUB -->
+    <div id="scanner-section" class="mb-4" style="display: none;">
+      
+      <!-- Visual Scanner Enclosure Frame Box -->
+      <div class="position-relative overflow-hidden bg-dark shadow rounded-4 border p-2 mb-3 mx-auto" style="max-width: 380px;">
+        <!-- Viewfinder Targeting Guide Reticle System Lines -->
+        <div class="scanner-laser"></div>
+        <div class="viewfinder-corner top-left"></div>
+        <div class="viewfinder-corner top-right"></div>
+        <div class="viewfinder-corner bottom-left"></div>
+        <div class="viewfinder-corner bottom-right"></div>
+        
+        <!-- Live Raw HW WebRTC Video Container Render Target -->
+        <div id="qr-reader" class="overflow-hidden rounded-3" style="background-color: #111;"></div>
+      </div>
+
+      <!-- Real-Time Text State Indicators Panel Box -->
+      <div class="card border-0 bg-white p-3 shadow-sm text-center mx-auto" style="max-width: 380px;">
+        
+        <!-- Scans Metric Tracking Counters Badge Row -->
+        <div class="mb-2">
+          <span id="scans-remaining" class="badge bg-light text-secondary border font-monospace px-3 py-2 fs-7 w-100">
+            Scans remaining: Checking token...
+          </span>
+        </div>
+
+        <!-- Alert Notification Messaging Container Box -->
+        <div id="scanner-alert" class="alert d-flex align-items-center justify-content-center gap-2 py-2.5 px-3 mb-3 d-none border fw-medium small"></div>
+
+        <!-- System Deactivator Action Kill Button -->
+        <button id="stop-scanner-btn" class="btn btn-danger btn-sm w-100 py-2 d-inline-flex align-items-center justify-content-center gap-1">
+          <i class="bx bx-power-off"></i> Disconnect Camera
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- STYLED LIVE GATE INTERFACE ASSETS COMPONENT LAYERS -->
+<style>
+  /* Viewfinder Targeting Reticles Styles Overlay */
+  .viewfinder-corner {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 4px solid var(--delle-teal);
+    z-index: 10;
+  }
+  .top-left { top: 12px; left: 12px; border-right: none; border-bottom: none; border-top-left-radius: 8px; }
+  .top-right { top: 12px; right: 12px; border-left: none; border-bottom: none; border-top-right-radius: 8px; }
+  .bottom-left { bottom: 12px; left: 12px; border-right: none; border-top: none; border-bottom-left-radius: 8px; }
+  .bottom-right { bottom: 12px; right: 12px; border-left: none; border-top: none; border-bottom-right-radius: 8px; }
+
+  /* Animated Breathing Scanner Laser Beam Bar Effect */
+  .scanner-laser {
+    position: absolute;
+    height: 3px;
+    width: calc(100% - 24px);
+    left: 12px;
+    background: linear-gradient(90deg, rgba(14,97,113,0) 0%, rgba(14,97,113,1) 50%, rgba(14,97,113,0) 100%);
+    box-shadow: 0 0 12px var(--delle-teal);
+    z-index: 9;
+    animation: scanMotion 2s infinite ease-in-out;
+  }
+
+  @keyframes scanMotion {
+    0% { top: 15px; }
+    50% { top: calc(100% - 20px); }
+    100% { top: 15px; }
+  }
+
+  /* Full Screen Flash Feedback Rings Layer Override Rules */
+  .flash-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s ease-in-out;
+  }
+  .flash-success {
+    box-shadow: inset 0 0 100px rgba(25, 135, 84, 0.65);
+    background-color: rgba(25, 135, 84, 0.1);
+    opacity: 1;
+  }
+  .flash-error {
+    box-shadow: inset 0 0 100px rgba(220, 53, 69, 0.65);
+    background-color: rgba(220, 53, 69, 0.1);
+    opacity: 1;
+  }
+
+  /* Clear default heavy internal borders on library nodes rendering container boxes */
+  #qr-reader {
+    border: none !important;
+  }
+  #qr-reader video {
+    object-fit: cover !important;
+    width: 100% !important;
+    max-height: 320px;
+  }
+</style>
+
+<!-- SCRIPT UTILITIES DRIVER CODES ENGINE -->
+<script>
+  let scanner;
+  let lastScanTime = 0;
+  const SCAN_DELAY = 2000;
+
+  const startBtn = document.getElementById('start-scanner-btn');
+  const stopBtn = document.getElementById('stop-scanner-btn');
+  const setupPanel = document.getElementById('setup-panel');
+  const section = document.getElementById('scanner-section');
+  const alertBox = document.getElementById('scanner-alert');
+  const scansEl = document.getElementById('scans-remaining');
+
+  function playBeep(type) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = "sine";
+      osc.frequency.value = type === "success" ? 880 : 220; // 880Hz crisp bell ring tone vs low warning drone note
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+    } catch (e) {
+      console.warn("Audio Context execution initialization error block caught", e);
+    }
+  }
+
+  function flash(type) {
+    const flashDiv = document.createElement("div");
+    flashDiv.className = `flash-overlay flash-${type}`;
+    document.body.appendChild(flashDiv);
+
+    // Minimal delay trigger lifecycle framework loops
+    setTimeout(() => {
+      flashDiv.style.opacity = "0";
+      setTimeout(() => flashDiv.remove(), 150);
+    }, 350);
+  }
+
+  function showNotification(msg, type) {
+    alertBox.className = `alert alert-${type === 'success' ? 'success' : 'danger'} d-flex align-items-center justify-content-center gap-2 py-2.5 px-3 mb-3`;
+    
+    const statusIcon = type === 'success' ? '<i class="bx bx-check-circle fs-5"></i>' : '<i class="bx bx-x-circle fs-5"></i>';
+    alertBox.innerHTML = `${statusIcon} <span>${msg}</span>`;
+    alertBox.classList.remove('d-none');
+
+    setTimeout(() => {
+      alertBox.classList.add('d-none');
+    }, 2800);
+  }
+
+  startBtn.onclick = () => {
+    setupPanel.style.display = 'none';
+    section.style.display = 'block';
+
+    scanner = new Html5Qrcode("qr-reader");
+
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 12, qrbox: { width: 220, height: 220 } },
+      async (text) => {
+        const now = Date.now();
+        if (now - lastScanTime < SCAN_DELAY) return;
+        lastScanTime = now;
+
+        try {
+          const res = await fetch('/events/<%= event.id %>/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ qrData: text })
+          });
+
+          const data = await res.json();
+
+          showNotification(data.message, data.success ? 'success' : 'danger');
+          playBeep(data.success ? "success" : "error");
+          flash(data.success ? "success" : "error");
+
+          if (data.scansRemaining !== undefined) {
+            scansEl.innerText = `Scans remaining on current pass token: ${data.scansRemaining}`;
+          }
+
+        } catch (err) {
+          showNotification("Network communication channel interrupted", "danger");
+          playBeep("error");
+          flash("error");
+        }
+      }
+    ).catch(err => {
+      console.error("Camera access failed", err);
+      setupPanel.style.display = 'block';
+      section.style.display = 'none';
+      alert("Could not initialize video streaming hardware source layer device.");
+    });
+  };
+
+  stopBtn.onclick = () => {
+    if (scanner) {
+      scanner.stop().then(() => {
+        setupPanel.style.display = 'block';
+        section.style.display = 'none';
+        scansEl.innerText = "Scans remaining: -";
+      }).catch(err => console.error("Error stopping engine tracking state loop", err));
+    } else {
+      setupPanel.style.display = 'block';
+      section.style.display = 'none';
+    }
   };
 </script>

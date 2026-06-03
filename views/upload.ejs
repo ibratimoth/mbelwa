@@ -1,15 +1,4 @@
-<!-- <% layout('layouts/main') -%>
-
-<h1 class="mb-3">Upload Attendees CSV</h1>
-<p>CSV should have headers: <code>name,type</code> where type is "single" or "double".</p>
-
-<form action="/attendees/upload" method="post" enctype="multipart/form-data" class="mb-3">
-  <div class="mb-3">
-    <input type="file" name="csvfile" accept=".csv" class="form-control" required>
-  </div>
-  <button class="btn btn-primary">Upload</button>
-</form> -->
-
+<!-- 
 
 <% layout('layouts/main', { event: event }) -%>
 
@@ -33,4 +22,188 @@
     Upload
   </button>
 
-</form>
+</form> -->
+
+<% layout('layouts/main', { event: event }) -%>
+
+<div class="row g-4 mb-5">
+  <!-- LEFT COLUMN: INSTRUCTIONS & FILE INPUT FORM -->
+  <div class="col-lg-5">
+    
+    <!-- Guidelines Card -->
+    <div class="card border-0 bg-white p-4 shadow-sm mb-4" style="border-left: 4px solid var(--delle-teal) !important;">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bx bx-info-circle fs-4 text-secondary"></i>
+        <h5 class="fw-bold text-dark mb-0">CSV Requirements</h5>
+      </div>
+      
+      <p class="text-muted small">
+        Please ensure your spreadsheet columns are structured precisely in the following lowercase order without headers, or using exactly these header labels:
+      </p>
+      
+      <div class="bg-light p-3 rounded-3 border font-monospace small mb-3 text-dark">
+        name,type,phone<br>
+        John Doe,Single,255712345678<br>
+        Jane Smith,Double,255787654321
+      </div>
+      
+      <div class="mb-2">
+        <button type="button" class="btn btn-delle-gold btn-sm d-inline-flex align-items-center gap-2 w-100 justify-content-center fw-medium shadow-sm" onclick="downloadSampleCSV()">
+          <i class="bx bx-download fs-5"></i> Download Sample Excel Template
+        </button>
+      </div>
+      
+      <p class="text-muted fs-7 mb-0 mt-3">
+        <i class="bx bx-error text-warning me-1"></i> Phone numbers should include country codes (e.g., 255...) for reliable SMS message delivery.
+      </p>
+    </div>
+
+    <!-- Upload Form Card -->
+    <div class="card border-0 bg-white p-4 shadow-sm">
+      <h6 class="fw-bold text-dark mb-3"><i class="bx bx-file-find me-2 text-secondary"></i>Select Spreadsheet</h6>
+      
+      <form action="/events/<%= event.id %>/guests/upload" method="post" enctype="multipart/form-data">
+        <div class="mb-4">
+          <label class="form-label small fw-bold text-secondary">Choose CSV File</label>
+          <div class="input-group">
+            <input type="file" name="csvfile" id="csvFileInput" class="form-control" accept=".csv" required>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="/events/<%= event.id %>" class="btn btn-light border btn-sm px-3 py-2 fw-medium">Cancel</a>
+          <button type="submit" class="btn btn-delle-teal btn-sm px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2">
+            <i class="bx bx-upload fs-5"></i> Begin Import
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN: CLIENT-SIDE LIVE DATA PARSING PREVIEW -->
+  <div class="col-lg-7">
+    <div class="card border-0 bg-white shadow-sm p-4 h-100 d-flex flex-column">
+      <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="fw-bold text-dark mb-1">File Preview</h6>
+          <span class="text-muted small" id="previewStatus">No data staged for parsing yet</span>
+        </div>
+        <i class="bx bx-table fs-3 text-muted" id="previewIcon"></i>
+      </div>
+
+      <!-- Scrollable Data Table Container -->
+      <div class="table-responsive flex-grow-1" id="previewContainer" style="display: none; max-height: 380px;">
+        <table class="table table-hover align-middle border small mb-0">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th scope="col" class="py-2 text-secondary fw-bold" style="width: 50px;">#</th>
+              <th scope="col" class="py-2 text-secondary fw-bold">Guest Name (name)</th>
+              <th scope="col" class="py-2 text-secondary fw-bold">Card Type (type)</th>
+              <th scope="col" class="py-2 text-secondary fw-bold">Phone Number (phone)</th>
+            </tr>
+          </thead>
+          <tbody id="previewTableBody">
+            <!-- Dynamic rows inject here via JS mapping -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty Visual State Backdrop -->
+      <div id="previewPlaceholder" class="d-flex flex-column align-items-center justify-content-center text-center py-5 flex-grow-1 bg-light rounded-3 border border-dashed">
+        <i class="bx bx-spreadsheet text-muted mb-2" style="font-size: 3.5rem;"></i>
+        <p class="text-secondary small mb-0 px-3">Select a valid .csv template file from your system storage to review structured row allocations on this canvas grid.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT PREVIEW DATA UTILITY & TEMPLATE EXPORTER ENGINE -->
+<script>
+  // Function to dynamically generate and download the sample CSV template
+  function downloadSampleCSV() {
+    const csvContent = "name,type,phone\nJohn Doe,Single,255712345678\nJane Smith,Double,255787654321\nOmari Hamisi,Single,255654321098";
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "wedding_guest_template.csv");
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Client-side parser preview logic
+  document.getElementById('csvFileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const container = document.getElementById('previewContainer');
+    const placeholder = document.getElementById('previewPlaceholder');
+    const tableBody = document.getElementById('previewTableBody');
+    const statusText = document.getElementById('previewStatus');
+    const previewIcon = document.getElementById('previewIcon');
+
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+      
+      tableBody.innerHTML = '';
+      let rowCount = 0;
+      
+      let startingIndex = 0;
+      if (lines.length > 0 && lines[0].toLowerCase().includes('name') && lines[0].toLowerCase().includes('phone')) {
+        startingIndex = 1;
+      }
+
+      for (let i = startingIndex; i < lines.length; i++) {
+        const columns = lines[i].split(',').map(col => col.replace(/^["']|["']$/g, '').trim());
+        
+        if (columns.length >= 3 || (columns.length === 1 && columns[0] !== '')) {
+          rowCount++;
+          
+          const gName = columns[0] || '<span class="text-danger italic">Missing</span>';
+          const gType = columns[1] || '<span class="text-muted">—</span>';
+          const gPhone = columns[2] || '<span class="text-muted">—</span>';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="text-muted fw-medium">${rowCount}</td>
+            <td class="fw-semibold text-dark">${gName}</td>
+            <td><span class="badge bg-light text-dark border">${gType}</span></td>
+            <td class="text-secondary font-monospace">${gPhone}</td>
+          `;
+          tableBody.appendChild(tr);
+        }
+        
+        if (rowCount >= 50) {
+          const warningTr = document.createElement('tr');
+          warningTr.className = 'table-warning text-center';
+          warningTr.innerHTML = `<td colspan="4" class="small text-muted py-2">Preview capped at first 50 rows. Remaining records will process normally upon submission.</td>`;
+          tableBody.appendChild(warningTr);
+          break;
+        }
+      }
+
+      if (rowCount > 0) {
+        placeholder.style.display = 'none';
+        container.style.display = 'block';
+        statusText.innerText = `Staged ${rowCount} rows for ingestion pipeline preview`;
+        previewIcon.className = "bx bx-check-double-circle fs-3 text-success";
+      } else {
+        placeholder.style.display = 'flex';
+        container.style.display = 'none';
+        statusText.innerText = 'Unable to parse valid records';
+        previewIcon.className = "bx bx-error-circle fs-3 text-danger";
+      }
+    };
+
+    reader.readAsText(file);
+  });
+</script>

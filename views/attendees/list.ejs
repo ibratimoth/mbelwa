@@ -1,114 +1,4 @@
-<!-- <% layout('layouts/main') -%>
-
-<h1 class="mb-3">Attendees</h1>
-
-<div class="mb-3">
-  <input
-    type="text"
-    id="searchInput"
-    class="form-control"
-    placeholder="Search attendee by name, type, or card number..."
-  >
-</div>
-
-<table class="table table-sm table-bordered table-hover align-middle text-nowrap">
-  <thead class="table-light">
-    <tr>
-      <th style="width:50px;">S/N</th>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Phone</th>
-      <th>Scans</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody id="attendeesTable">
-    <% guests.forEach((g, i) => { %>
-      <tr>
-        <td class="sn-col"><%= i + 1 %></td>
-        <td><%= g.name %></td>
-        <td><%= g.type %></td>
-        <td><%= g.phone || '-' %></td>
-        <td><%= g.scans %></td>
-        
-        <td class="d-flex gap-1 flex-wrap">
-          <a class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit" href="/attendees/<%= g.id %>/edit">
-            <i class="bi bi-pencil-square"></i>
-          </a>
-          <a class="btn btn-sm btn-outline-success py-0 px-2" title="Download" href="/attendees/<%= g.id %>/download">
-            <i class="bi bi-download"></i>
-          </a>
-        </td>
-      </tr>
-    <% }) %>
-  </tbody>
-</table>
-
-<nav>
-  <ul class="pagination justify-content-center" id="pagination"></ul>
-</nav>
-
-<p id="noResults" class="text-center text-muted d-none">No attendees found.</p>
-
-<script>
-  const searchInput = document.getElementById('searchInput');
-  const table = document.getElementById('attendeesTable');
-  const rows = Array.from(table.querySelectorAll('tr'));
-  const pagination = document.getElementById('pagination');
-  const noResults = document.getElementById('noResults');
-
-  const rowsPerPage = 10;
-  let currentPage = 1;
-  let filteredRows = rows;
-
-  function renderTable() {
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-
-    rows.forEach(row => row.style.display = 'none');
-    filteredRows.slice(start, end).forEach((row, index) => {
-      row.style.display = '';
-      // Update S/N dynamically for visible rows
-      row.querySelector('.sn-col').textContent = start + index + 1;
-    });
-
-    renderPagination();
-    noResults.classList.toggle('d-none', filteredRows.length > 0);
-  }
-
-  function renderPagination() {
-    pagination.innerHTML = '';
-    const pageCount = Math.ceil(filteredRows.length / rowsPerPage);
-    if (pageCount <= 1) return;
-
-    for (let i = 1; i <= pageCount; i++) {
-      const li = document.createElement('li');
-      li.className = `page-item ${i === currentPage ? 'active' : ''}`;
-      li.innerHTML = `<button class="page-link">${i}</button>`;
-      li.addEventListener('click', () => {
-        currentPage = i;
-        renderTable();
-      });
-      pagination.appendChild(li);
-    }
-  }
-
-  searchInput.addEventListener('keyup', function () {
-    const term = this.value.toLowerCase().trim();
-    filteredRows = rows.filter(row => row.textContent.toLowerCase().includes(term));
-    currentPage = 1;
-    renderTable();
-  });
-
-  renderTable();
-</script>
-
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-/> -->
-
-
+<!-- 
 <% layout('layouts/main', { event: event }) -%>
 
 <h3 class="mb-3">
@@ -195,5 +85,138 @@
     });
 
     noResults.classList.toggle('d-none', visible > 0);
+  });
+</script> -->
+
+<% layout('layouts/main', { event: event }) -%>
+
+<!-- PAGE HEADER -->
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4 pb-2 border-bottom">
+  <div class="d-flex align-items-center gap-2">
+    <i class="bx bx-group fs-3 text-secondary"></i>
+    <div>
+      <h3 class="mb-0 fw-bold text-dark">Guest Directory</h3>
+      <span class="text-muted small"><%= event.title %></span>
+    </div>
+  </div>
+
+  <a href="/events/<%= event.id %>/guests/upload" class="btn btn-delle-outline btn-sm px-3 py-2 fw-medium d-inline-flex align-items-center gap-1 shadow-sm">
+    <i class="bx bx-upload fs-5"></i> Import CSV List
+  </a>
+</div>
+
+<!-- FILTER & UTILITY BAR -->
+<div class="card border-0 bg-white shadow-sm p-3 mb-4">
+  <div class="row align-items-center g-2">
+    <div class="col-md-6 col-lg-4">
+      <div class="input-group">
+        <span class="input-group-text bg-light text-muted border-end-0"><i class="bx bx-search fs-5"></i></span>
+        <input type="text" id="searchInput" class="form-control border-start-0 bg-light" placeholder="Search by name, phone, card no...">
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-8 text-md-end">
+      <span class="text-muted small fw-medium">Total Registered: <strong class="text-dark"><%= guests.length %></strong></span>
+    </div>
+  </div>
+</div>
+
+<!-- GUESTS DATA CONTAINER -->
+<div class="card border-0 bg-white shadow-sm overflow-hidden mb-5">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 small">
+      <thead class="table-light border-bottom">
+        <tr>
+          <th scope="col" class="py-3 ps-4 text-secondary fw-bold" style="width: 60px;">#</th>
+          <th scope="col" class="py-3 text-secondary fw-bold">Full Name</th>
+          <th scope="col" class="py-3 text-secondary fw-bold" style="width: 120px;">Pass Type</th>
+          <th scope="col" class="py-3 text-secondary fw-bold">Phone Number</th>
+          <th scope="col" class="py-3 text-secondary fw-bold">Card Number</th>
+          <th scope="col" class="py-3 text-secondary fw-bold text-center" style="width: 100px;">Scans</th>
+          <th scope="col" class="py-3 text-secondary fw-bold text-end pe-4" style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody id="attendeesTable" class="border-0">
+        <% guests.forEach((g, i) => { %>
+          <tr class="align-middle">
+            <!-- Serial Number -->
+            <td class="sn-col py-3 ps-4 text-muted fw-medium"><%= i + 1 %></td>
+            
+            <!-- Name -->
+            <td class="fw-bold text-dark"><%= g.name %></td>
+            
+            <!-- Type Badge -->
+            <td>
+              <span class="badge rounded-pill px-2.5 py-1.5 font-medium bg-light text-dark border">
+                <%= g.type %>
+              </span>
+            </td>
+            
+            <!-- Phone -->
+            <td class="text-secondary font-monospace"><%= g.phone || '—' %></td>
+            
+            <!-- Card Number -->
+            <td class="text-secondary font-monospace fw-medium"><%= g.card_number || '—' %></td>
+            
+            <!-- Scan Status Counter with Contextual Alerts -->
+            <td class="text-center">
+              <% if (g.scans === 0) { %>
+                <span class="badge bg-light text-muted px-2 py-1 border"><%= g.scans %></span>
+              <% } else if (g.scans === 1) { %>
+                <span class="badge px-2 py-1 text-white shadow-xs" style="background-color: var(--delle-teal);"><%= g.scans %></span>
+              <% } else { %>
+                <span class="badge bg-danger text-white px-2 py-1 animate-pulse shadow-sm" title="Warning: Duplicate entry check triggered"><i class="bx bx-error-circle me-0.5 align-middle"></i><%= g.scans %></span>
+              <% } %>
+            </td>
+
+            <!-- Action Controls Buttons Row -->
+            <td class="text-end pe-4">
+              <div class="d-inline-flex gap-1">
+                <a class="btn btn-sm btn-light border text-secondary p-2 d-inline-flex align-items-center justify-content-center rounded-2" 
+                   href="/events/<%= event.id %>/guests/<%= g.id %>/edit" title="Edit Record">
+                  <i class="bx bx-edit fs-6"></i>
+                </a>
+
+                <a class="btn btn-sm btn-light border text-success p-2 d-inline-flex align-items-center justify-content-center rounded-2" 
+                   href="/events/<%= event.id %>/guests/<%= g.id %>/download" title="Download Generated Invitation Asset">
+                  <i class="bx bx-download fs-6"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty Search Results Placeholder -->
+  <div id="noResults" class="text-center py-5 bg-white d-none border-top">
+    <i class="bx bx-user-x text-muted mb-2" style="font-size: 3rem;"></i>
+    <p class="text-secondary mb-0">No guest records match your active search filter parameters.</p>
+  </div>
+</div>
+
+<!-- CLIENT REFINED LOOKUP SCRIPTS MATRIX -->
+<script>
+  document.getElementById('searchInput').addEventListener('keyup', function () {
+    const term = this.value.toLowerCase();
+    const tableBody = document.getElementById('attendeesTable');
+    const rows = Array.from(tableBody.querySelectorAll('tr'));
+    const noResults = document.getElementById('noResults');
+
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      // Exclude warning label row objects if present in grid DOM spaces
+      if (row.classList.contains('table-warning')) return;
+      
+      const text = row.innerText.toLowerCase();
+      const match = text.includes(term);
+      row.style.display = match ? '' : 'none';
+      if (match) visibleCount++;
+    });
+
+    // Toggle visual clean empty state grid overlay if count falls flat
+    noResults.classList.toggle('d-none', visibleCount > 0);
   });
 </script>

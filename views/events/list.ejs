@@ -1,4 +1,4 @@
-<% layout('layouts/main') %>
+<!-- <% layout('layouts/main') %>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h3>Events</h3>
@@ -38,7 +38,6 @@
   <% }) %>
 </div>
 
-<!-- CREATE EVENT MODAL -->
 <div class="modal fade" id="createEventModal">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -86,6 +85,140 @@ document
     preview.src =
       URL.createObjectURL(file);
 
+    preview.style.display = 'block';
+  });
+</script> -->
+
+<% layout('layouts/main') %>
+
+<!-- PAGE HEADER -->
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+  <div class="d-flex align-items-center gap-2">
+    <i class="bx bx-layer fs-3 text-secondary"></i>
+    <h3 class="mb-0 fw-bold text-dark">Events Dashboard</h3>
+  </div>
+
+  <button class="btn btn-delle-teal d-inline-flex align-items-center gap-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#createEventModal">
+    <i class="bx bx-plus-circle fs-5"></i> Create New Event
+  </button>
+</div>
+
+<!-- EVENTS GRID -->
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+  <% events.forEach(event => { %>
+    <div class="col">
+
+      <!-- Branded Card Concept -->
+      <div class="card h-100 shadow-sm border-0 bg-white" style="border-left: 4px solid var(--delle-teal) !important;">
+        <div class="card-body d-flex flex-column p-4">
+
+          <h5 class="card-title fw-bold text-dark mb-3 text-truncate"><%= event.title %></h5>
+
+          <div class="mb-4 flex-grow-1">
+            <p class="text-muted small mb-2 d-flex align-items-center gap-2">
+              <i class="bx bx-map fs-5 text-secondary"></i> 
+              <span><%= event.venue %></span>
+            </p>
+
+            <p class="text-muted small mb-0 d-flex align-items-center gap-2">
+              <i class="bx bx-calendar fs-5 text-secondary"></i>
+              <span><%= event.event_date ? new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) : 'Date TBD' %></span>
+            </p>
+          </div>
+
+          <a href="/events/<%= event.id %>" class="btn btn-delle-outline btn-sm w-100 mt-auto py-2 d-inline-flex align-items-center justify-content-center gap-2 fw-medium">
+            Manage Event <i class="bx bx-right-arrow-alt fs-5"></i>
+          </a>
+
+        </div>
+      </div>
+
+    </div>
+  <% }) %>
+</div>
+
+<!-- CREATE EVENT MODAL -->
+<div class="modal fade" id="createEventModal" tabindex="-1" aria-labelledby="createEventModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+
+      <form method="post" action="/events/create" enctype="multipart/form-data">
+
+        <div class="modal-header border-bottom bg-light">
+          <h5 class="modal-title fw-bold text-dark" id="createEventModalLabel">
+            <i class="bx bx-calendar-plus text-secondary me-2"></i>New Event Details
+          </h5>
+          <button type="button" class="btn-close" data-bs-style="none" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-4">
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Event Name</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white text-muted"><i class="bx bx-edit-alt"></i></span>
+              <input type="text" class="form-control" name="title" placeholder="e.g., John & Mary's Wedding" required>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold text-secondary">Groom's Name</label>
+              <input type="text" class="form-control" name="groom_name" placeholder="First & Last Name">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold text-secondary">Bride's Name</label>
+              <input type="text" class="form-control" name="bride_name" placeholder="First & Last Name">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Venue Location</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white text-muted"><i class="bx bx-map-pin"></i></span>
+              <input type="text" class="form-control" name="venue" placeholder="Hall name, City" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Event Date</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white text-muted"><i class="bx bx-calendar"></i></span>
+              <input type="date" class="form-control" name="event_date" required>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small fw-bold text-secondary">Digital Invitation Card Template</label>
+            <input type="file" name="card_template" accept="image/*" class="form-control" required>
+            <div class="form-text text-muted small">Upload the background graphic for the system to generate barcodes over.</div>
+          </div>
+
+          <!-- Real-time Image Preview Canvas -->
+          <div class="position-relative mt-3">
+            <img id="templatePreview" class="img-fluid border rounded shadow-sm d-block mx-auto bg-light" style="max-height: 250px; display: none; object-fit: contain;">
+          </div>
+
+        </div>
+
+        <div class="modal-footer border-top bg-light p-3">
+          <button type="button" class="btn btn-light border btn-sm px-4 py-2" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-delle-teal btn-sm px-4 py-2 shadow-sm">Save Event</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelector('[name="card_template"]').addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    const preview = document.getElementById('templatePreview');
+    preview.src = URL.createObjectURL(file);
     preview.style.display = 'block';
   });
 </script>

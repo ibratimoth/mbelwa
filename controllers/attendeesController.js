@@ -599,13 +599,14 @@ async function updateGuest(req, res) {
     return res.status(404).send('Guest not found');
   }
 
-  const { name, type, phone, scans } = req.body;
+  const { name, type, phone, scans, card_number } = req.body;
 
   await guest.update({
     name,
     type,
     phone,
-    scans
+    scans,
+    card_number
   });
 
   return res.redirect(`/events/${req.params.eventId}/guests`);

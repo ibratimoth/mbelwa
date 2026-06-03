@@ -1,32 +1,4 @@
-<!-- <% layout('layouts/main') -%>
-
-<h1 class="mb-3">Edit Guest</h1>
-
-<form method="post" action="/attendees/<%= guest.id %>/edit">
-  <div class="mb-3">
-    <label class="form-label">Name</label>
-    <input name="name" value="<%= guest.name %>" class="form-control">
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Phone</label>
-    <input name="phone" value="<%= guest.phone || '' %>" class="form-control">
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Scans</label>
-    <input name="scans" value="<%= guest.scans %>" class="form-control">
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Type</label>
-    <select name="type" class="form-select">
-      <option value="single" <%= guest.type==='single'?'selected':'' %>>Single</option>
-      <option value="double" <%= guest.type==='double'?'selected':'' %>>Double</option>
-    </select>
-  </div>
-  <button class="btn btn-primary">Save</button>
-  <a class="btn btn-link" href="/attendees">Cancel</a>
-</form> -->
-
-
+<!-- 
 <% layout('layouts/main', { event: event }) -%>
 
 <h3>Edit Guest</h3>
@@ -59,4 +31,103 @@
 
   <button class="btn btn-primary">Save</button>
 
-</form>
+</form> -->
+
+<% layout('layouts/main', { event: event }) -%>
+
+<div class="row g-4 justify-content-center mb-5">
+  <div class="col-lg-7">
+    
+    <!-- BACK TO DIRECTORY LINK -->
+    <div class="mb-3">
+      <a href="/events/<%= event.id %>/guests" class="text-secondary text-decoration-none small d-inline-flex align-items-center gap-1">
+        <i class="bx bx-left-arrow-alt fs-5"></i> Back to Guest Directory
+      </a>
+    </div>
+
+    <!-- MAIN FORM CARD Container -->
+    <div class="card border-0 bg-white shadow-sm p-4">
+      
+      <!-- Card Section Header -->
+      <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom">
+        <i class="bx bx-user-pin fs-3 text-secondary"></i>
+        <div>
+          <h4 class="fw-bold text-dark mb-0">Modify Guest Record</h4>
+          <span class="text-muted small">Update profile configuration parameters for this invitation pass.</span>
+        </div>
+      </div>
+
+      <!-- EDIT TARGET DATA PIPELINE FORM -->
+      <form method="post" action="/events/<%= event.id %>/guests/<%= guest.id %>/edit">
+
+        <!-- Guest Full Name Field -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-secondary">Full Name</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light text-muted border-end-0"><i class="bx bx-user fs-5"></i></span>
+            <input type="text" class="form-control border-start-0 bg-light" name="name" value="<%= guest.name %>" required placeholder="e.g. John Doe">
+          </div>
+        </div>
+
+        <!-- Card Number Mapping Field -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-secondary">Card Number (UID/Serial)</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light text-muted border-end-0"><i class="bx bx-id-card fs-5"></i></span>
+            <input type="text" class="form-control border-start-0 bg-light font-monospace" name="card_number" value="<%= guest.card_number || '' %>" placeholder="e.g. CARD-84729">
+          </div>
+          <div class="form-text fs-7 text-muted">The physical or digital serial token linked directly to this user profile pass layout.</div>
+        </div>
+
+        <!-- Phone / SMS Communication Target Field -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-secondary">Phone Number</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light text-muted border-end-0"><i class="bx bx-phone fs-5"></i></span>
+            <input type="text" class="form-control border-start-0 bg-light font-monospace" name="phone" value="<%= guest.phone || '' %>" placeholder="e.g. 255712345678">
+          </div>
+          <div class="form-text fs-7 text-muted">Include country code layout format string for automated barcode SMS delivery protocols.</div>
+        </div>
+
+        <!-- Invitation Classification Group Dropdown Selection -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-secondary">Pass/Card Classification Type</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light text-muted border-end-0"><i class="bx bx-purchase-tag fs-5"></i></span>
+            <select class="form-select border-start-0 bg-light" name="type">
+              <option value="single" <%= guest.type === 'single' ? 'selected' : '' %>>Single Pass Allocation</option>
+              <option value="double" <%= guest.type === 'double' ? 'selected' : '' %>>Double Pass Allocation</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- System Security Tracking Metrics Overrides Block -->
+        <div class="mb-4 p-3 bg-light rounded-3 border">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="form-label small fw-bold text-secondary mb-0">Total Registered Gate Scans</label>
+            <% if (guest.scans > 1) { %>
+              <span class="badge bg-danger text-white"><i class="bx bx-error-circle me-1"></i>Multiple Entry Warning</span>
+            <% } %>
+          </div>
+          <div class="input-group">
+            <span class="input-group-text border-end-0"><i class="bx bx-scan fs-5"></i></span>
+            <input type="number" class="form-control border-start-0 font-monospace" name="scans" value="<%= guest.scans %>" min="0" required>
+          </div>
+          <div class="form-text fs-7 text-muted mt-2 text-warning">
+            <i class="bx bx-info-circle me-0.5"></i> Adjusting this count changes live validation logs. Reduce back to 0 or 1 if reset authorization is required.
+          </div>
+        </div>
+
+        <!-- COMPONENT CTA INTERACTIVE CONTROL ACTION BAR -->
+        <div class="d-flex align-items-center justify-content-end gap-2 border-top pt-3">
+          <a href="/events/<%= event.id %>/guests" class="btn btn-light border btn-sm px-4 py-2 fw-medium">Cancel Changes</a>
+          <button type="submit" class="btn btn-delle-teal btn-sm px-4 py-2 shadow-sm d-inline-flex align-items-center gap-1">
+            <i class="bx bx-save fs-5"></i> Commit Updates
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
