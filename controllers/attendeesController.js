@@ -75,7 +75,7 @@ async function smsWebhook(req, res) {
 
     // 2. FIND SMS LOG
     const log = await SmsLog.findOne({
-      where: { message_id: messageId }
+      where: { provider_message_id: messageId }
     });
 
     if (!log) {
