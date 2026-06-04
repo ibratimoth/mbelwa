@@ -1,35 +1,3 @@
-// // routes/attendees.js
-// const express = require('express');
-// const router = express.Router();
-// const multer = require('multer');
-// const path = require('path');
-// const { showUploadForm, handleCsvUpload, list, editForm, updateGuest, downloadCard, scanGuest, showScan } = require('../controllers/attendeesController');
-
-// const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-//   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
-// });
-// const upload = multer({ storage });
-
-// // list
-// router.get('/', list);
-
-// // upload form & handler
-// router.get('/upload', showUploadForm);
-// router.post('/upload', upload.single('csvfile'), handleCsvUpload);
-
-// // edit
-// router.get('/:id/edit', editForm);
-// router.post('/:id/edit', updateGuest);
-
-// // download
-// router.get('/:id/download', downloadCard);
-// router.post('/scan', scanGuest);
-// router.get('/scan', showScan);
-
-// module.exports = router;
-
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -52,7 +20,10 @@ const {
   generateScannerLink,
   showPublicScanner,
   scanGuestByToken,
-  sendScannerLink
+  sendScannerLink,
+  smsWebhook,
+  getCampaignSummary,
+  retryFailedSms
 } = require('../controllers/attendeesController');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
@@ -123,5 +94,17 @@ router.post(
 );
 
 router.post('/events/:id/send-scanner-link', sendScannerLink);
+
+router.post('/sms/webhook', smsWebhook);
+
+router.get(
+  '/sms/campaigns/:campaignId/summary',
+  getCampaignSummary
+);
+
+router.post(
+  '/sms/campaigns/:campaignId/retry-failed',
+  retryFailedSms
+);
 
 module.exports = router;

@@ -15,6 +15,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'event_id',
         as: 'event'
       });
+
+      guest.hasMany(models.sms_log, {
+        foreignKey: 'guest_id',
+        as: 'sms_logs'
+      });
     }
   }
   guest.init({

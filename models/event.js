@@ -14,6 +14,11 @@ module.exports = (sequelize, DataTypes) => {
         as: 'guests'
       });
 
+      event.hasMany(models.sms_campaign, {
+        foreignKey: 'event_id',
+        as: 'sms_campaigns'
+      });
+
     }
   }
 

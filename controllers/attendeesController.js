@@ -5,14 +5,18 @@ const csv = require('csv-parser');
 //const { guest: Guest } = require('../models');
 const {
   guest: Guest,
-  event: Event
+  event: Event,
+  sms_campaign:SmsCampaign,
+  sms_log: SmsLog
 } = require('../models');
 const { generateQRCodeToFile } = require('../utils/qrcode');
 const { generateCardPNG, generatePreviewCard } = require('../utils/cardGenerator');
 const { v4: uuidv4 } = require('uuid');
 const { sendBulkSMS, SENDER } = require('../services/smsService');
+const smsQueue = require('../queues/smsQueue');
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
 const crypto = require('crypto');
+const { Sequelize } = require('sequelize');
 
 // async function sendInvite(req, res) {
 //   try {
@@ -52,6 +56,187 @@ const crypto = require('crypto');
 //     });
 //   }
 // }
+
+const SMS_WEBHOOK_TOKEN = process.env.WEBHOOK_SECRET;
+
+async function smsWebhook(req, res) {
+  try {
+
+    const { token, messageId, status } = req.body;
+
+    // 1. SECURITY CHECK
+    if (token !== SMS_WEBHOOK_TOKEN) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    if (!messageId || !status) {
+      return res.status(400).json({ message: 'Invalid payload' });
+    }
+
+    // 2. FIND SMS LOG
+    const log = await SmsLog.findOne({
+      where: { message_id: messageId }
+    });
+
+    if (!log) {
+      return res.status(404).json({ message: 'SMS log not found' });
+    }
+
+    // 3. UPDATE STATUS
+    log.status = status;
+    await log.save();
+
+    console.log(`📩 SMS updated: ${messageId} → ${status}`);
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error('WEBHOOK ERROR:', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+async function getCampaignSummary(req, res) {
+  try {
+
+    const campaignId = req.params.campaignId;
+
+    const campaign = await SmsCampaign.findByPk(campaignId);
+
+    if (!campaign) {
+      return res.status(404).json({
+        success: false,
+        message: 'Campaign not found'
+      });
+    }
+
+    const stats = await SmsLog.findAll({
+      attributes: [
+        'status',
+        [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']
+      ],
+      where: {
+        campaign_id: campaignId
+      },
+      group: ['status']
+    });
+
+    const summary = {
+      campaignId: campaign.id,
+      campaignName: campaign.name,
+      campaignType: campaign.type,
+      total: 0,
+      pending: 0,
+      sent: 0,
+      delivered: 0,
+      failed: 0,
+      read: 0
+    };
+
+    stats.forEach(row => {
+
+      const status = row.status.toLowerCase();
+      const count = parseInt(row.get('count'));
+
+      summary.total += count;
+
+      if (summary.hasOwnProperty(status)) {
+        summary[status] = count;
+      }
+    });
+
+    return res.json({
+      success: true,
+      data: summary
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to load summary'
+    });
+  }
+}
+
+async function retryFailedSms(req, res) {
+  try {
+
+    const { campaignId } = req.params;
+
+    const campaign = await SmsCampaign.findByPk(campaignId);
+
+    if (!campaign) {
+      return res.status(404).json({
+        success: false,
+        message: 'Campaign not found'
+      });
+    }
+
+    const failedLogs = await SmsLog.findAll({
+      where: {
+        campaign_id: campaignId,
+        status: 'FAILED'
+      }
+    });
+
+    if (!failedLogs.length) {
+      return res.json({
+        success: true,
+        message: 'No failed SMS found'
+      });
+    }
+
+    const messages = failedLogs.map(log => ({
+      to: log.phone,
+      text: log.message,
+      reference: log.reference_id
+    }));
+
+    await SmsLog.update(
+      {
+        status: 'PENDING'
+      },
+      {
+        where: {
+          campaign_id: campaignId,
+          status: 'FAILED'
+        }
+      }
+    );
+
+    const job = await smsQueue.add(
+      'retry-failed-sms',
+      {
+        messages,
+        campaignId
+      },
+      {
+        attempts: 5,
+        backoff: {
+          type: 'exponential',
+          delay: 30000
+        }
+      }
+    );
+
+    return res.json({
+      success: true,
+      retried: messages.length,
+      jobId: job.id
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Retry failed'
+    });
+  }
+}
 
 async function generateScannerLink(req, res) {
   try {
@@ -247,12 +432,206 @@ async function scanGuestByToken(req, res) {
 //   }
 // }
 
+// async function sendScannerLink(req, res) {
+//   try {
+
+//     const eventId = req.params.id;
+
+//     // match frontend (use numbers)
+//     const { numbers } = req.body;
+
+//     const event = await Event.findByPk(eventId);
+
+//     if (!event) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Event not found'
+//       });
+//     }
+
+//     if (!numbers || !numbers.length) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'No phone numbers provided'
+//       });
+//     }
+
+//     const scanLink = `${process.env.APP_URL}/scanner/${event.scanner_token}`;
+//     const messages = numbers.map((phone, index) => {
+
+//       // clean input
+//       let formatted = phone
+//         .toString()
+//         .trim()
+//         .replace(/\s+/g, '')
+//         .replace('+', '');
+
+//       // normalize TZ format
+//       if (formatted.startsWith('0')) {
+//         formatted = '255' + formatted.substring(1);
+//       }
+
+//       if (!formatted.startsWith('255')) {
+//         formatted = '255' + formatted;
+//       }
+
+//       return {
+//         from: SENDER,
+//         to: formatted,
+//         text: `Scanner Access for ${event.title}: ${scanLink}`,
+//         reference: `${event.id}-${Date.now()}-${index}`
+//       };
+//     });
+
+//     const response = await sendBulkSMS(messages);
+
+//     console.log("📡 Scanner SMS Response:", response);
+
+//     return res.json({
+//       success: true,
+//       sent: messages.length,
+//       message: 'Scanner links sent successfully',
+//       apiResponse: response
+//     });
+
+//   } catch (err) {
+
+//     console.error("SMS ERROR:", err?.response?.data || err);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Failed to send scanner links'
+//     });
+//   }
+// }
+
+// async function sendInvite(req, res) {
+//   try {
+//     const eventId = req.params.id;
+
+//     const event = await Event.findByPk(eventId);
+//     if (!event) {
+//       return res.status(404).json({ success: false, message: 'Event not found' });
+//     }
+
+//     const guests = await Guest.findAll({
+//       where: { event_id: eventId }
+//     });
+
+//     if (!guests.length) {
+//       return res.status(400).json({ success: false, message: 'No guests found' });
+//     }
+
+//     const messages = guests.map(g => ({
+//       from: SENDER,
+//       to: g.phone,
+//       text: `You are invited to ${event.title}`,
+//       reference: `${event.id}-${g.id}-${Date.now()}`
+//     }));
+
+//     // ✅ CAPTURE API RESPONSE
+//     //const response = await sendBulkSMS(messages);
+
+//     await smsQueue.add('send-sms', {
+//       messages
+//     }, {
+//       attempts: 5,
+//       backoff: {
+//         type: 'exponential',
+//         delay: 30000
+//       }
+//     });
+
+//     // console.log('📩 SENDER:', SENDER);
+//     // console.log('📩 SMS API RESPONSE:', JSON.stringify(response, null, 2));
+
+//     // OPTIONAL: store raw response in DB or logs
+//     // await SmsLog.create({ event_id: eventId, response });
+
+//     return res.json({
+//       success: true,
+//       message: 'Invitations sent successfully',
+//       apiResponse: response
+//     });
+
+//   } catch (err) {
+//     console.error('SEND INVITE ERROR:', err?.response?.data || err);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Failed to send invitations'
+//     });
+//   }
+// }
+
+// async function sendInvite(req, res) {
+//   try {
+//     const eventId = req.params.id;
+
+//     const event = await Event.findByPk(eventId);
+
+//     if (!event) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Event not found'
+//       });
+//     }
+
+//     const guests = await Guest.findAll({
+//       where: { event_id: eventId }
+//     });
+
+//     if (!guests.length) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'No guests found'
+//       });
+//     }
+
+//     const messages = guests.map(g => ({
+//       from: SENDER,
+//       to: g.phone,
+//       text: `You are invited to ${event.title}`,
+//       reference: `${event.id}-${g.id}-${Date.now()}`
+//     }));
+
+//     // ✅ ADD TO QUEUE (NOT DIRECT SMS)
+//     const job = await smsQueue.add(
+//       'send-sms',
+//       { messages },
+//       {
+//         jobId: `event-${eventId}-invite`, // 🔒 prevents duplicates
+//         attempts: 5,
+//         backoff: {
+//           type: 'exponential',
+//           delay: 30000
+//         }
+//       }
+//     );
+
+//     console.log('📥 SMS Job created:', job.id);
+
+//     return res.json({
+//       success: true,
+//       message: 'Invitations queued successfully',
+//       jobId: job.id,
+//       totalMessages: messages.length
+//     });
+
+//   } catch (err) {
+//     console.error('SEND INVITE ERROR:', err);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Failed to queue invitations'
+//     });
+//   }
+// }
+
 async function sendScannerLink(req, res) {
   try {
 
     const eventId = req.params.id;
-
-    // match frontend (use numbers)
     const { numbers } = req.body;
 
     const event = await Event.findByPk(eventId);
@@ -264,58 +643,91 @@ async function sendScannerLink(req, res) {
       });
     }
 
-    if (!numbers || !numbers.length) {
+    if (!numbers?.length) {
       return res.status(400).json({
         success: false,
         message: 'No phone numbers provided'
       });
     }
 
-    const scanLink = `${process.env.APP_URL}/scanner/${event.scanner_token}`;
-    const messages = numbers.map((phone, index) => {
+    // 1. CREATE CAMPAIGN
+    const campaign = await SmsCampaign.create({
+      event_id: eventId,
+      name: 'Scanner Link',
+      type: 'scanner',
+      message_template: `Scanner Access for ${event.title}`
+    });
 
-      // clean input
-      let formatted = phone
+    const scanLink = `${process.env.APP_URL}/scanner/${event.scanner_token}`;
+
+    const messages = [];
+
+    for (let i = 0; i < numbers.length; i++) {
+
+      let phone = numbers[i]
         .toString()
         .trim()
         .replace(/\s+/g, '')
         .replace('+', '');
 
-      // normalize TZ format
-      if (formatted.startsWith('0')) {
-        formatted = '255' + formatted.substring(1);
+      if (phone.startsWith('0')) {
+        phone = '255' + phone.substring(1);
       }
 
-      if (!formatted.startsWith('255')) {
-        formatted = '255' + formatted;
+      if (!phone.startsWith('255')) {
+        phone = '255' + phone;
       }
 
-      return {
+      const reference_id = `scanner-${campaign.id}-${phone}`;
+
+      // 2. PREVENT DUPLICATE
+      const exists = await SmsLog.findOne({ where: { reference_id } });
+      if (exists) continue;
+
+      // 3. CREATE LOG
+      await SmsLog.create({
+        campaign_id: campaign.id,
+        event_id: eventId,
+        phone,
+        message: `Scanner Access for ${event.title}: ${scanLink}`,
+        reference_id,
+        status: 'PENDING'
+      });
+
+      messages.push({
         from: SENDER,
-        to: formatted,
+        to: phone,
         text: `Scanner Access for ${event.title}: ${scanLink}`,
-        reference: `${event.id}-${Date.now()}-${index}`
-      };
-    });
+        reference: reference_id
+      });
+    }
 
-    const response = await sendBulkSMS(messages);
-
-    console.log("📡 Scanner SMS Response:", response);
+    // 4. SEND VIA QUEUE (NOT DIRECT SMS)
+    const job = await smsQueue.add(
+      'send-sms',
+      {
+        messages,
+        campaignId: campaign.id,
+        type: 'scanner'
+      },
+      {
+        jobId: `scanner-${campaign.id}`
+      }
+    );
 
     return res.json({
       success: true,
-      sent: messages.length,
-      message: 'Scanner links sent successfully',
-      apiResponse: response
+      campaignId: campaign.id,
+      jobId: job.id,
+      sent: messages.length
     });
 
   } catch (err) {
-
-    console.error("SMS ERROR:", err?.response?.data || err);
+    console.error(err);
 
     return res.status(500).json({
       success: false,
-      message: 'Failed to send scanner links'
+      message: 'Failed to queue scanner links'
     });
   }
 }
@@ -325,47 +737,69 @@ async function sendInvite(req, res) {
     const eventId = req.params.id;
 
     const event = await Event.findByPk(eventId);
-    if (!event) {
-      return res.status(404).json({ success: false, message: 'Event not found' });
-    }
+    if (!event) return res.status(404).json({ message: 'Event not found' });
 
-    const guests = await Guest.findAll({
-      where: { event_id: eventId }
-    });
+    const guests = await Guest.findAll({ where: { event_id: eventId } });
 
     if (!guests.length) {
-      return res.status(400).json({ success: false, message: 'No guests found' });
+      return res.status(400).json({ message: 'No guests found' });
     }
 
-    const messages = guests.map(g => ({
-      from: SENDER,
-      to: g.phone,
-      text: `You are invited to ${event.title}`,
-      reference: `${event.id}-${g.id}-${Date.now()}`
-    }));
+    // 1. CREATE CAMPAIGN
+    const campaign = await SmsCampaign.create({
+      event_id: eventId,
+      name: 'Invitation',
+      type: 'invite',
+      message_template: `You are invited to ${event.title}`
+    });
 
-    // ✅ CAPTURE API RESPONSE
-    const response = await sendBulkSMS(messages);
+    const messages = [];
 
-    console.log('📩 SENDER:', SENDER);
-    console.log('📩 SMS API RESPONSE:', JSON.stringify(response, null, 2));
+    for (const g of guests) {
 
-    // OPTIONAL: store raw response in DB or logs
-    // await SmsLog.create({ event_id: eventId, response });
+      const reference_id = `invite-${campaign.id}-${g.id}`;
+
+      // 2. PREVENT DUPLICATE
+      const exists = await SmsLog.findOne({ where: { reference_id } });
+      if (exists) continue;
+
+      // 3. CREATE LOG
+      await SmsLog.create({
+        campaign_id: campaign.id,
+        event_id: eventId,
+        guest_id: g.id,
+        phone: g.phone,
+        message: `You are invited to ${event.title}`,
+        reference_id,
+        status: 'PENDING'
+      });
+
+      messages.push({
+        from: SENDER,
+        to: g.phone,
+        text: `You are invited to ${event.title}`,
+        reference: reference_id
+      });
+    }
+
+    // 4. QUEUE JOB
+    await smsQueue.add(
+      'send-sms',
+      { messages, campaignId: campaign.id },
+      {
+        jobId: `campaign-${campaign.id}`
+      }
+    );
 
     return res.json({
       success: true,
-      message: 'Invitations sent successfully',
-      apiResponse: response
+      campaignId: campaign.id,
+      total: messages.length
     });
 
   } catch (err) {
-    console.error('SEND INVITE ERROR:', err?.response?.data || err);
-
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to send invitations'
-    });
+    console.error(err);
+    return res.status(500).json({ message: 'Failed' });
   }
 }
 
@@ -741,5 +1175,8 @@ module.exports = {
   generateScannerLink,
   showPublicScanner,
   scanGuestByToken,
-  sendScannerLink
+  sendScannerLink,
+  smsWebhook,
+  getCampaignSummary,
+  retryFailedSms
 };
