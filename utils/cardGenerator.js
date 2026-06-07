@@ -74,7 +74,7 @@ async function generateCardPNG({
   layoutConfig = {}
 }) {
 
-  console.log('layoutConfig received in generateCardPNG:', layoutConfig);
+  //console.log('layoutConfig received in generateCardPNG:', layoutConfig);
   const safeName = name || '';
   const typeText = type === 'double' ? 'Double' : 'Single';
 

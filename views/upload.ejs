@@ -54,7 +54,7 @@
       </div>
       
       <p class="text-muted fs-7 mb-0 mt-3">
-        <i class="bx bx-error text-warning me-1"></i> Phone numbers should include country codes (e.g., 255...) for reliable SMS message delivery.
+        <i class="bx bx-error text-warning me-1"></i> Phone numbers should not include country codes (e.g., 255...) or start with Zero (e.g., 0..) for reliable SMS message delivery.
       </p>
     </div>
 
@@ -123,7 +123,7 @@
 <script>
   // Function to dynamically generate and download the sample CSV template
   function downloadSampleCSV() {
-    const csvContent = "name,type,phone\nJohn Doe,Single,255712345678\nJane Smith,Double,255787654321\nOmari Hamisi,Single,255654321098";
+    const csvContent = "name,type,phone\nJohn Doe,Single,712345678\nJane Smith,Double,787654321\nOmari Hamisi,Single,654321098";
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
