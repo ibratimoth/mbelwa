@@ -719,7 +719,8 @@ async function sendScannerLink(req, res) {
       success: true,
       campaignId: campaign.id,
       jobId: job.id,
-      sent: messages.length
+      sent: messages.length,
+      message: 'Scanner link sent successfully'
     });
 
   } catch (err) {
@@ -794,7 +795,8 @@ async function sendInvite(req, res) {
     return res.json({
       success: true,
       campaignId: campaign.id,
-      total: messages.length
+      total: messages.length,
+      message: 'invitation sent successfully'
     });
 
   } catch (err) {
