@@ -1,5 +1,5 @@
 const axios = require('axios');
-
+const logger = require('../utils/logger');
  require('dotenv').config();
 
 const BASE_URL = process.env.NEXTSMS_BASE_URL;
@@ -26,7 +26,7 @@ async function sendBulkSMS(messages) {
 
     return response.data;
   } catch (err) {
-    console.error("SMS ERROR:", err.response?.data || err.message);
+    logger.error("SMS ERROR:", err.response?.data || err.message);
     throw err;
   }
 }

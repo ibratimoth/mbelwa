@@ -25,13 +25,14 @@ const {
   getCampaignSummary,
   retryFailedSms
 } = require('../controllers/attendeesController');
+const logger = require('../utils/logger');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
 
 const storage = multer.diskStorage({
 
   destination: (req, file, cb) => {
-    console.log('Uploading file:', file.fieldname, file.originalname);
+    logger.info('Uploading file:', file.fieldname, file.originalname);
     if (file.fieldname === 'card_template') {
       return cb(null, 'public/templates');
     }

@@ -6,7 +6,7 @@ const csv = require('csv-parser');
 const {
   guest: Guest,
   event: Event,
-  sms_campaign:SmsCampaign,
+  sms_campaign: SmsCampaign,
   sms_log: SmsLog
 } = require('../models');
 const { generateQRCodeToFile } = require('../utils/qrcode');
@@ -17,6 +17,7 @@ const smsQueue = require('../queues/smsQueue');
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
 const crypto = require('crypto');
 const { Sequelize } = require('sequelize');
+const logger = require('../utils/logger');
 
 // async function sendInvite(req, res) {
 //   try {
@@ -86,12 +87,12 @@ async function smsWebhook(req, res) {
     log.status = status;
     await log.save();
 
-    console.log(`📩 SMS updated: ${messageId} → ${status}`);
+    logger.log(`📩 SMS updated: ${messageId} → ${status}`);
 
     return res.json({ success: true });
 
   } catch (err) {
-    console.error('WEBHOOK ERROR:', err);
+    logger.error('WEBHOOK ERROR:', err);
     return res.status(500).json({ message: 'Server error' });
   }
 }
@@ -151,7 +152,7 @@ async function getCampaignSummary(req, res) {
     });
 
   } catch (err) {
-    console.error(err);
+    logger.error(err);
 
     return res.status(500).json({
       success: false,
@@ -229,7 +230,7 @@ async function retryFailedSms(req, res) {
 
   } catch (err) {
 
-    console.error(err);
+    logger.error(err);
 
     return res.status(500).json({
       success: false,
@@ -263,7 +264,7 @@ async function generateScannerLink(req, res) {
     });
 
   } catch (err) {
-    console.error(err);
+    logger.error(err);
 
     res.status(500).json({
       success: false
@@ -362,7 +363,7 @@ async function scanGuestByToken(req, res) {
 
   } catch (err) {
 
-    console.error(err);
+    logger.error(err);
 
     res.status(400).json({
       success: false,
@@ -628,6 +629,183 @@ async function scanGuestByToken(req, res) {
 //   }
 // }
 
+// async function sendScannerLink(req, res) {
+//   try {
+
+//     const eventId = req.params.id;
+//     const { numbers } = req.body;
+
+//     const event = await Event.findByPk(eventId);
+
+//     if (!event) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Event not found'
+//       });
+//     }
+
+//     if (!numbers?.length) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'No phone numbers provided'
+//       });
+//     }
+
+//     // 1. CREATE CAMPAIGN
+//     const campaign = await SmsCampaign.create({
+//       event_id: eventId,
+//       name: 'Scanner Link',
+//       type: 'scanner',
+//       message_template: `Scanner Access for ${event.title}`
+//     });
+
+//     const scanLink = `${process.env.APP_URL}/scanner/${event.scanner_token}`;
+
+//     const messages = [];
+
+//     for (let i = 0; i < numbers.length; i++) {
+
+//       let phone = numbers[i]
+//         .toString()
+//         .trim()
+//         .replace(/\s+/g, '')
+//         .replace('+', '');
+
+//       if (phone.startsWith('0')) {
+//         phone = '255' + phone.substring(1);
+//       }
+
+//       if (!phone.startsWith('255')) {
+//         phone = '255' + phone;
+//       }
+
+//       const reference_id = `scanner-${campaign.id}-${phone}`;
+
+//       // 2. PREVENT DUPLICATE
+//       const exists = await SmsLog.findOne({ where: { reference_id } });
+//       if (exists) continue;
+
+//       // 3. CREATE LOG
+//       await SmsLog.create({
+//         campaign_id: campaign.id,
+//         event_id: eventId,
+//         phone,
+//         message: `Scanner Access for ${event.title}: ${scanLink}`,
+//         reference_id,
+//         status: 'PENDING'
+//       });
+
+//       messages.push({
+//         from: SENDER,
+//         to: phone,
+//         text: `Scanner Access for ${event.title}: ${scanLink}`,
+//         reference: reference_id
+//       });
+//     }
+
+//     // 4. SEND VIA QUEUE (NOT DIRECT SMS)
+//     const job = await smsQueue.add(
+//       'send-sms',
+//       {
+//         messages,
+//         campaignId: campaign.id,
+//         type: 'scanner'
+//       },
+//       {
+//         jobId: `scanner-${campaign.id}`
+//       }
+//     );
+
+//     return res.json({
+//       success: true,
+//       campaignId: campaign.id,
+//       jobId: job.id,
+//       sent: messages.length,
+//       message: 'Scanner link sent successfully'
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Failed to queue scanner links'
+//     });
+//   }
+// }
+
+// async function sendInvite(req, res) {
+//   try {
+//     const eventId = req.params.id;
+
+//     const event = await Event.findByPk(eventId);
+//     if (!event) return res.status(404).json({ message: 'Event not found' });
+
+//     const guests = await Guest.findAll({ where: { event_id: eventId } });
+
+//     if (!guests.length) {
+//       return res.status(400).json({ message: 'No guests found' });
+//     }
+
+//     // 1. CREATE CAMPAIGN
+//     const campaign = await SmsCampaign.create({
+//       event_id: eventId,
+//       name: 'Invitation',
+//       type: 'invite',
+//       message_template: `You are invited to ${event.title}`
+//     });
+
+//     const messages = [];
+
+//     for (const g of guests) {
+
+//       const reference_id = `invite-${campaign.id}-${g.id}`;
+
+//       // 2. PREVENT DUPLICATE
+//       const exists = await SmsLog.findOne({ where: { reference_id } });
+//       if (exists) continue;
+
+//       // 3. CREATE LOG
+//       await SmsLog.create({
+//         campaign_id: campaign.id,
+//         event_id: eventId,
+//         guest_id: g.id,
+//         phone: g.phone,
+//         message: `You are invited to ${event.title}`,
+//         reference_id,
+//         status: 'PENDING'
+//       });
+
+//       messages.push({
+//         from: SENDER,
+//         to: g.phone,
+//         text: `You are invited to ${event.title}`,
+//         reference: reference_id
+//       });
+//     }
+
+//     // 4. QUEUE JOB
+//     await smsQueue.add(
+//       'send-sms',
+//       { messages, campaignId: campaign.id },
+//       {
+//         jobId: `campaign-${campaign.id}`
+//       }
+//     );
+
+//     return res.json({
+//       success: true,
+//       campaignId: campaign.id,
+//       total: messages.length,
+//       message: 'invitation sent successfully'
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({ message: 'Failed' });
+//   }
+// }
+
 async function sendScannerLink(req, res) {
   try {
 
@@ -650,18 +828,11 @@ async function sendScannerLink(req, res) {
       });
     }
 
-    // 1. CREATE CAMPAIGN
-    const campaign = await SmsCampaign.create({
-      event_id: eventId,
-      name: 'Scanner Link',
-      type: 'scanner',
-      message_template: `Scanner Access for ${event.title}`
-    });
-
     const scanLink = `${process.env.APP_URL}/scanner/${event.scanner_token}`;
 
-    const messages = [];
+    const validRecipients = [];
 
+    // CHECK DUPLICATES FIRST
     for (let i = 0; i < numbers.length; i++) {
 
       let phone = numbers[i]
@@ -678,13 +849,51 @@ async function sendScannerLink(req, res) {
         phone = '255' + phone;
       }
 
+      const duplicateLog = await SmsLog.findOne({
+        where: {
+          event_id: eventId,
+          phone
+        }
+      });
+
+      if (duplicateLog) {
+
+       logger.info(
+          `⚠️ Scanner SMS already sent to ${phone} for event ${eventId}. Skipping.`
+        );
+
+        continue;
+      }
+
+      validRecipients.push(phone);
+    }
+
+    if (!validRecipients.length) {
+
+      logger.info(
+        '⚠️ All supplied numbers already received scanner links.'
+      );
+
+      return res.status(400).json({
+        success: false,
+        message: 'All supplied numbers have already received scanner links'
+      });
+    }
+
+    // CREATE CAMPAIGN ONLY IF THERE ARE MESSAGES
+    const campaign = await SmsCampaign.create({
+      event_id: eventId,
+      name: 'Scanner Link',
+      type: 'scanner',
+      message_template: `Scanner Access for ${event.title}`
+    });
+
+    const messages = [];
+
+    for (const phone of validRecipients) {
+
       const reference_id = `scanner-${campaign.id}-${phone}`;
 
-      // 2. PREVENT DUPLICATE
-      const exists = await SmsLog.findOne({ where: { reference_id } });
-      if (exists) continue;
-
-      // 3. CREATE LOG
       await SmsLog.create({
         campaign_id: campaign.id,
         event_id: eventId,
@@ -702,7 +911,10 @@ async function sendScannerLink(req, res) {
       });
     }
 
-    // 4. SEND VIA QUEUE (NOT DIRECT SMS)
+    logger.info(
+      `📤 Scanner SMS queued: ${messages.length} messages`
+    );
+
     const job = await smsQueue.add(
       'send-sms',
       {
@@ -711,7 +923,12 @@ async function sendScannerLink(req, res) {
         type: 'scanner'
       },
       {
-        jobId: `scanner-${campaign.id}`
+        jobId: `scanner-${campaign.id}`,
+        attempts: 5,
+        backoff: {
+          type: 'exponential',
+          delay: 30000
+        }
       }
     );
 
@@ -720,11 +937,12 @@ async function sendScannerLink(req, res) {
       campaignId: campaign.id,
       jobId: job.id,
       sent: messages.length,
-      message: 'Scanner link sent successfully'
+      message: 'Scanner links queued successfully'
     });
 
   } catch (err) {
-    console.error(err);
+
+    logger.error('SCANNER SMS ERROR:', err);
 
     return res.status(500).json({
       success: false,
@@ -733,75 +951,244 @@ async function sendScannerLink(req, res) {
   }
 }
 
+// async function sendInvite(req, res) {
+//   try {
+
+//     const eventId = req.params.id;
+
+//     const event = await Event.findByPk(eventId);
+//     if (!event) {
+//       return res.status(404).json({ message: 'Event not found' });
+//     }
+
+//     const guests = await Guest.findAll({ where: { event_id: eventId } });
+
+//     if (!guests.length) {
+//       return res.status(400).json({ message: 'No guests found' });
+//     }
+
+//     const validGuests = [];
+
+//     // 1. CHECK DUPLICATES FIRST
+//     for (const g of guests) {
+
+//       const reference_id = `invite-${eventId}-${g.id}`;
+
+//       const exists = await SmsLog.findOne({
+//         where: { reference_id }
+//       });
+
+//       if (exists) {
+//         logger.info(
+//           `⚠️ Invite already sent to guest_id=${g.id} (phone=${g.phone})`
+//         );
+//         continue;
+//       }
+
+//       validGuests.push(g);
+//     }
+
+//     if (!validGuests.length) {
+//       logger.info('⚠️ All guests already received invites');
+
+//       return res.status(400).json({
+//         success: false,
+//         message: 'All guests already received invites'
+//       });
+//     }
+
+//     // 2. CREATE CAMPAIGN ONLY WHEN NEEDED
+//     const campaign = await SmsCampaign.create({
+//       event_id: eventId,
+//       name: 'Invitation',
+//       type: 'invite',
+//       message_template: `Wedding invitation`
+//     });
+
+//     const messages = [];
+
+//     for (const g of validGuests) {
+
+//       const reference_id = `invite-${campaign.id}-${g.id}`;
+
+//       const invitationMessage =
+//         `Ndugu ${g.name}, kwa heshima kubwa tunakualika kuhudhuria sherehe ya harusi ya ${event.groom_name} na ${event.bride_name}. ` +
+//         `Kadi yako ni Na. ${g.card_number}. Sherehe itafanyika ${event.venue} tarehe ${new Date(event.event_date).toLocaleDateString()}. ` +
+//         `Karibu kusherehekea nasi siku hii ya furaha.`;
+
+//       // 3. SAVE LOG
+//       await SmsLog.create({
+//         campaign_id: campaign.id,
+//         event_id: eventId,
+//         guest_id: g.id,
+//         phone: g.phone,
+//         message: invitationMessage,
+//         reference_id,
+//         status: 'PENDING'
+//       });
+
+//       messages.push({
+//         from: SENDER,
+//         to: g.phone,
+//         text: invitationMessage,
+//         reference: reference_id
+//       });
+//     }
+
+//     logger.info(`📤 Invite SMS queued: ${messages.length} messages`);
+
+//     // 4. QUEUE JOB
+//     const job = await smsQueue.add(
+//       'send-sms',
+//       {
+//         messages,
+//         campaignId: campaign.id,
+//         type: 'invite'
+//       },
+//       {
+//         jobId: `invite-${campaign.id}`,
+//         attempts: 5,
+//         backoff: {
+//           type: 'exponential',
+//           delay: 30000
+//         }
+//       }
+//     );
+
+//     return res.json({
+//       success: true,
+//       campaignId: campaign.id,
+//       jobId: job.id,
+//       total: messages.length,
+//       message: 'Invitation queued successfully'
+//     });
+
+//   } catch (err) {
+
+//     logger.error('INVITE SMS ERROR:', err);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Failed to queue invitation'
+//     });
+//   }
+// }
+
 async function sendInvite(req, res) {
   try {
     const eventId = req.params.id;
 
     const event = await Event.findByPk(eventId);
-    if (!event) return res.status(404).json({ message: 'Event not found' });
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
 
-    const guests = await Guest.findAll({ where: { event_id: eventId } });
+    const guests = await Guest.findAll({
+      where: { event_id: eventId }
+    });
 
     if (!guests.length) {
       return res.status(400).json({ message: 'No guests found' });
     }
 
-    // 1. CREATE CAMPAIGN
+    // 1. CREATE CAMPAIGN FIRST
     const campaign = await SmsCampaign.create({
       event_id: eventId,
       name: 'Invitation',
-      type: 'invite',
-      message_template: `You are invited to ${event.title}`
+      type: 'wedding_invite',
+      message_template: `Wedding invitation`
     });
 
     const messages = [];
+    let skipped = 0;
 
+    // 2. BUILD MESSAGES + LOGS
     for (const g of guests) {
 
-      const reference_id = `invite-${campaign.id}-${g.id}`;
+      const reference_id = `${campaign.type}-${g.id}-${eventId}`;
 
-      // 2. PREVENT DUPLICATE
-      const exists = await SmsLog.findOne({ where: { reference_id } });
-      if (exists) continue;
+      // 3. PREVENT DUPLICATE
+      const exists = await SmsLog.findOne({
+        where: { reference_id }
+      });
 
-      // 3. CREATE LOG
+      if (exists) {
+        logger.info(
+          `⚠️ SKIPPED (already sent): guest_id=${g.id}, phone=${g.phone}`
+        );
+        skipped++;
+        continue;
+      }
+
+      const invitationMessage =
+        `Ndugu ${g.name}, kwa heshima kubwa tunakualika kuhudhuria sherehe ya harusi ya ` +
+        `${event.groom_name} na ${event.bride_name}. ` +
+        `Kadi yako ni Na. ${g.card_number}. ` +
+        `Sherehe itafanyika ${event.venue} tarehe ${new Date(event.event_date).toLocaleDateString()}. ` +
+        `Karibu kusherehekea nasi siku hii ya furaha.`;
+
+      // 4. SAVE SMS LOG
       await SmsLog.create({
         campaign_id: campaign.id,
         event_id: eventId,
         guest_id: g.id,
         phone: g.phone,
-        message: `You are invited to ${event.title}`,
+        message: invitationMessage,
         reference_id,
         status: 'PENDING'
       });
 
+      // 5. QUEUE PAYLOAD
       messages.push({
         from: SENDER,
         to: g.phone,
-        text: `You are invited to ${event.title}`,
+        text: invitationMessage,
         reference: reference_id
       });
     }
 
-    // 4. QUEUE JOB
-    await smsQueue.add(
+    // 6. NOTHING TO SEND CHECK
+    if (!messages.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'All invites already sent'
+      });
+    }
+
+    // 7. QUEUE JOB
+    const job = await smsQueue.add(
       'send-sms',
-      { messages, campaignId: campaign.id },
       {
-        jobId: `campaign-${campaign.id}`
+        messages,
+        campaignId: campaign.id,
+        type: 'invite'
+      },
+      {
+        jobId: `invite-${campaign.id}`,
+        attempts: 5,
+        backoff: {
+          type: 'exponential',
+          delay: 30000
+        }
       }
     );
 
     return res.json({
       success: true,
       campaignId: campaign.id,
-      total: messages.length,
-      message: 'invitation sent successfully'
+      jobId: job.id,
+      sent: messages.length,
+      skipped,
+      message: 'Invitation queued successfully'
     });
 
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: 'Failed' });
+    logger.error('INVITE ERROR:', err);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to queue invitations'
+    });
   }
 }
 
@@ -831,7 +1218,7 @@ async function previewCard(req, res) {
     });
 
   } catch (err) {
-    console.error(err);
+    logger.error(err);
 
     return res.status(500).json({
       success: false,
@@ -879,7 +1266,7 @@ async function createEvent(req, res) {
     return res.redirect(`/events/${event.id}`);
 
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     return res.status(500).send('Failed to create event');
   }
 }
@@ -992,13 +1379,13 @@ async function handleCsvUpload(req, res) {
 
       return res.redirect(`/events/${req.params.eventId}/guests`);
     } catch (e) {
-      console.error(e);
+      logger.error(e);
       return res.status(500).send('Error processing CSV');
     }
   });
 
   stream.on('error', (err) => {
-    console.error(err);
+    logger.error(err);
     return res.status(500).send('Failed to process CSV');
   });
 }
@@ -1142,7 +1529,7 @@ async function scanGuest(req, res) {
     });
 
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     return res.status(400).json({
       success: false,
       message: 'Invalid QR code'
