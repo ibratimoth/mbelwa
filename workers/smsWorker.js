@@ -145,6 +145,7 @@ const smsWorker = new Worker(
           );
         } catch (err) {
           logger.error(`❌ WHATSAPP WORKER ERROR (${r.phone}):`, err?.response?.data || err.message);
+          console.error(`❌ WHATSAPP WORKER ERROR (${r.phone}):`, err?.response?.data || err.message);
 
           await SmsLog.update(
             { status: 'FAILED' },
