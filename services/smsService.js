@@ -27,6 +27,7 @@ async function sendBulkSMS(messages) {
     return response.data;
   } catch (err) {
     logger.error("SMS ERROR:", err.response?.data || err.message);
+    console.error("SMS ERROR:", err.response?.data || err.message);
     throw err;
   }
 }

@@ -41,6 +41,7 @@ async function sendSingleWhatsAppWithCard({ phone, cardUrl, variables, templateN
     return response.data;
   } catch (err) {
     logger.error(`WHATSAPP ERROR (${phone}):`, err.response?.data || err.message);
+    console.error(`WHATSAPP ERROR (${phone}):`, err.response?.data || err.message);
     throw err;
   }
 }
