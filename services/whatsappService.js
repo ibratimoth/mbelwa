@@ -29,7 +29,7 @@ async function sendSingleWhatsAppWithCard({ phone, cardUrl, variables, templateN
     console.log(`payload for WhatsApp message to ${cleanedPhone}:`, JSON.stringify(payload, null, 2));
 
     const response = await axios.post(
-      `${BASE_URL}/api/whatsapp/v2/text/multi`,
+      `${BASE_URL}/api/whatsapp/v2/text/single`,
       payload,
       {
         headers: {
