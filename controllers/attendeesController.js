@@ -18,6 +18,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
 const crypto = require('crypto');
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
+const { Op } = require("sequelize");
 
 // async function sendInvite(req, res) {
 //   try {
@@ -858,7 +859,7 @@ async function sendScannerLink(req, res) {
 
       if (duplicateLog) {
 
-       logger.info(
+        logger.info(
           `⚠️ Scanner SMS already sent to ${phone} for event ${eventId}. Skipping.`
         );
 
@@ -951,107 +952,78 @@ async function sendScannerLink(req, res) {
   }
 }
 
-// async function sendInvite(req, res) {
+// async function sendWhatsAppInvite(req, res) {
 //   try {
-
 //     const eventId = req.params.id;
-
 //     const event = await Event.findByPk(eventId);
-//     if (!event) {
-//       return res.status(404).json({ message: 'Event not found' });
-//     }
+//     if (!event) return res.status(404).json({ message: 'Event not found' });
 
 //     const guests = await Guest.findAll({ where: { event_id: eventId } });
+//     if (!guests.length) return res.status(400).json({ message: 'No guests found' });
 
-//     if (!guests.length) {
-//       return res.status(400).json({ message: 'No guests found' });
-//     }
+//     const campaign = await SmsCampaign.create({
+//       event_id: eventId,
+//       name: 'WhatsApp Invitation',
+//       type: 'whatsapp_wedding_invite',
+//       message_template: 'mwaliko' // Your Meta template name
+//     });
 
-//     const validGuests = [];
+//     const recipients = [];
+//     let skipped = 0;
 
-//     // 1. CHECK DUPLICATES FIRST
 //     for (const g of guests) {
+//       const reference_id = `wa-${g.id}-${eventId}`;
 
-//       const reference_id = `invite-${eventId}-${g.id}`;
-
-//       const exists = await SmsLog.findOne({
-//         where: { reference_id }
-//       });
-
+//       const exists = await SmsLog.findOne({ where: { reference_id } });
 //       if (exists) {
-//         logger.info(
-//           `⚠️ Invite already sent to guest_id=${g.id} (phone=${g.phone})`
-//         );
+//         skipped++;
 //         continue;
 //       }
 
-//       validGuests.push(g);
-//     }
+//       // Map template variable values matching the order registered in Meta
+//       const variables = {
+//         guest_name: g.name,
+//         groom_name: event.groom_name,
+//         bride_name: event.bride_name,
+//         card_number: g.card_number,
+//         venue: event.venue,
+//         event_date: new Date(event.event_date).toLocaleDateString()
+//       };
 
-//     if (!validGuests.length) {
-//       logger.info('⚠️ All guests already received invites');
-
-//       return res.status(400).json({
-//         success: false,
-//         message: 'All guests already received invites'
-//       });
-//     }
-
-//     // 2. CREATE CAMPAIGN ONLY WHEN NEEDED
-//     const campaign = await SmsCampaign.create({
-//       event_id: eventId,
-//       name: 'Invitation',
-//       type: 'invite',
-//       message_template: `Wedding invitation`
-//     });
-
-//     const messages = [];
-
-//     for (const g of validGuests) {
-
-//       const reference_id = `invite-${campaign.id}-${g.id}`;
-
-//       const invitationMessage =
-//         `Ndugu ${g.name}, kwa heshima kubwa tunakualika kuhudhuria sherehe ya harusi ya ${event.groom_name} na ${event.bride_name}. ` +
-//         `Kadi yako ni Na. ${g.card_number}. Sherehe itafanyika ${event.venue} tarehe ${new Date(event.event_date).toLocaleDateString()}. ` +
-//         `Karibu kusherehekea nasi siku hii ya furaha.`;
-
-//       // 3. SAVE LOG
+//       // Create log prior to dispatching
 //       await SmsLog.create({
 //         campaign_id: campaign.id,
 //         event_id: eventId,
 //         guest_id: g.id,
 //         phone: g.phone,
-//         message: invitationMessage,
+//         message: JSON.stringify(variables),
 //         reference_id,
 //         status: 'PENDING'
 //       });
 
-//       messages.push({
-//         from: SENDER,
-//         to: g.phone,
-//         text: invitationMessage,
-//         reference: reference_id
+//       recipients.push({
+//         phone: g.phone,
+//         reference: reference_id,
+//         variables
 //       });
 //     }
 
-//     logger.info(`📤 Invite SMS queued: ${messages.length} messages`);
+//     if (!recipients.length) {
+//       return res.status(400).json({ success: false, message: 'All invites already sent' });
+//     }
 
-//     // 4. QUEUE JOB
+//     // Add to BullMQ Queue
 //     const job = await smsQueue.add(
-//       'send-sms',
+//       'send-whatsapp',
 //       {
-//         messages,
-//         campaignId: campaign.id,
-//         type: 'invite'
+//         recipients,
+//         templateName: campaign.message_template,
+//         campaignId: campaign.id
 //       },
 //       {
-//         jobId: `invite-${campaign.id}`,
-//         attempts: 5,
-//         backoff: {
-//           type: 'exponential',
-//           delay: 30000
-//         }
+//         jobId: `wa-invite-${campaign.id}`,
+//         attempts: 3,
+//         backoff: { type: 'exponential', delay: 30000 }
 //       }
 //     );
 
@@ -1059,20 +1031,130 @@ async function sendScannerLink(req, res) {
 //       success: true,
 //       campaignId: campaign.id,
 //       jobId: job.id,
-//       total: messages.length,
-//       message: 'Invitation queued successfully'
+//       sent: recipients.length,
+//       skipped
 //     });
-
 //   } catch (err) {
-
-//     logger.error('INVITE SMS ERROR:', err);
-
-//     return res.status(500).json({
-//       success: false,
-//       message: 'Failed to queue invitation'
-//     });
+//     logger.error('WA INVITE ERROR:', err);
+//     return res.status(500).json({ success: false, message: 'Failed to queue WhatsApp invitations' });
 //   }
 // }
+
+async function sendWhatsAppInvite(req, res) {
+  try {
+    const eventId = req.params.id;
+    const event = await Event.findByPk(eventId);
+    if (!event) return res.status(404).json({ message: 'Event not found' });
+
+    const guests = await Guest.findAll({ where: { event_id: eventId } });
+    if (!guests.length) return res.status(400).json({ message: 'No guests found' });
+
+    const campaign = await SmsCampaign.create({
+      event_id: eventId,
+      name: 'WhatsApp Invitation with Card',
+      type: 'whatsapp_wedding_invite',
+      message_template: 'mwaliko'
+    });
+
+    const recipients = [];
+    let skipped = 0;
+    const APP_BASE_URL = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+    for (const g of guests) {
+      const reference_id = `wa-${g.id}-${eventId}`;
+
+      const exists = await SmsLog.findOne({ where: { reference_id } });
+      if (exists) {
+        skipped++;
+        continue;
+      }
+
+      // 1. Ensure QR Code exists
+      let qrPath = g.qr_code_path;
+      if (!qrPath || !fs.existsSync(qrPath)) {
+        const qrFilename = `${g.id}.png`;
+        qrPath = await generateQRCodeToFile(
+          JSON.stringify({ guest_id: g.id, event_id: eventId, name: g.name }),
+          qrFilename
+        );
+        await g.update({ qr_code_path: qrPath });
+      }
+
+      // 2. Generate Card PNG
+      const generatedCardPath = await generateCardPNG({
+        name: g.name,
+        type: g.type,
+        qrPath,
+        baseTemplateFilename: event.card_template || 'card_base6.jpg',
+        outputFilename: `wa_card_${g.id}.png`,
+        layoutConfig: event.layout_config || {},
+        maxSizeBytes: 2 * 1024 * 1024 // 2 MB target limit
+      });
+
+      // 3. Convert local file path to public HTTP URL
+      const relativePath = path.relative('public', generatedCardPath).replace(/\\/g, '/');
+      const publicCardUrl = `${APP_BASE_URL}/public/${relativePath}`;
+
+      const variables = {
+        guest_name: g.name,
+        groom_name: event.groom_name,
+        bride_name: event.bride_name,
+        card_number: g.card_number,
+        venue: event.venue,
+        event_date: new Date(event.event_date).toLocaleDateString()
+      };
+
+      await SmsLog.create({
+        campaign_id: campaign.id,
+        event_id: eventId,
+        guest_id: g.id,
+        phone: g.phone,
+        message: JSON.stringify(variables),
+        reference_id,
+        status: 'PENDING'
+      });
+
+      recipients.push({
+        phone: g.phone,
+        cardUrl: publicCardUrl,
+        reference: reference_id,
+        variables
+      });
+    }
+
+    if (!recipients.length) {
+      return res.status(400).json({ success: false, message: 'All WhatsApp invites already sent' });
+    }
+
+    // Queue BullMQ job
+    const job = await smsQueue.add(
+      'send-whatsapp',
+      {
+        recipients,
+        templateName: campaign.message_template,
+        campaignId: campaign.id
+      },
+      {
+        jobId: `wa-invite-${campaign.id}`,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 30000 }
+      }
+    );
+
+    return res.json({
+      success: true,
+      campaignId: campaign.id,
+      jobId: job.id,
+      sent: recipients.length,
+      skipped,
+      message: 'WhatsApp invitations with cards queued successfully'
+    });
+
+  } catch (err) {
+    console.error('WA INVITE ERROR:', err);
+    return res.status(500).json({ success: false, message: 'Failed to process WhatsApp invitations' });
+  }
+}
 
 async function sendInvite(req, res) {
   try {
@@ -1109,7 +1191,12 @@ async function sendInvite(req, res) {
 
       // 3. PREVENT DUPLICATE
       const exists = await SmsLog.findOne({
-        where: { reference_id }
+        where: {
+          reference_id,
+          provider_response: {
+            [Op.ne]: null
+          }
+        }
       });
 
       if (exists) {
@@ -1435,52 +1522,103 @@ async function updateGuest(req, res) {
   return res.redirect(`/events/${req.params.eventId}/guests`);
 }
 
+// async function downloadCard(req, res) {
+//   const guest = await Guest.findOne({
+//     where: {
+//       id: req.params.id,
+//       event_id: req.params.eventId
+//     }
+//   });
+
+//   const event = await Event.findByPk(
+//     guest.event_id
+//   );
+
+//   if (!guest) {
+//     return res.status(404).send('Guest not found');
+//   }
+
+//   let qrPath = guest.qr_code_path;
+
+//   if (!qrPath || !fs.existsSync(qrPath)) {
+//     const qrFilename = `${guest.id}.png`;
+
+//     qrPath = await generateQRCodeToFile(
+//       JSON.stringify({
+//         guest_id: guest.id,
+//         event_id: req.params.eventId,
+//         name: guest.name
+//       }),
+//       qrFilename
+//     );
+
+//     await guest.update({ qr_code_path: qrPath });
+//   }
+
+//   const outPath = await generateCardPNG({
+//     name: guest.name,
+//     type: guest.type,
+//     qrPath,
+//     baseTemplateFilename: event.card_template || 'card_base6.jpg',
+//     outputFilename: `${guest.id}_card.png`,
+//     layoutConfig: event.layout_config || {}
+//   });
+
+//   return res.download(
+//     outPath,
+//     `${guest.name.replace(/\s+/g, '_')}_card.png`
+//   );
+// }
+
 async function downloadCard(req, res) {
-  const guest = await Guest.findOne({
-    where: {
-      id: req.params.id,
-      event_id: req.params.eventId
+  try {
+    const guest = await Guest.findOne({
+      where: {
+        id: req.params.id,
+        event_id: req.params.eventId
+      }
+    });
+
+    if (!guest) {
+      return res.status(404).send('Guest not found');
     }
-  });
 
-  const event = await Event.findByPk(
-    guest.event_id
-  );
+    const event = await Event.findByPk(guest.event_id);
 
-  if (!guest) {
-    return res.status(404).send('Guest not found');
+    let qrPath = guest.qr_code_path;
+
+    if (!qrPath || !fs.existsSync(qrPath)) {
+      const qrFilename = `${guest.id}.png`;
+
+      qrPath = await generateQRCodeToFile(
+        JSON.stringify({
+          guest_id: guest.id,
+          event_id: req.params.eventId,
+          name: guest.name
+        }),
+        qrFilename
+      );
+
+      await guest.update({ qr_code_path: qrPath });
+    }
+
+    const outPath = await generateCardPNG({
+      name: guest.name,
+      type: guest.type,
+      qrPath,
+      baseTemplateFilename: event?.card_template || 'card_base6.jpg',
+      outputFilename: `${guest.id}_card.png`,
+      layoutConfig: event?.layout_config || {},
+      maxSizeBytes: 2 * 1024 * 1024 // 2 MB target limit
+    });
+
+    const safeFilename = `${guest.name.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_')}_card.png`;
+
+    return res.download(outPath, safeFilename);
+  } catch (error) {
+    console.error('Error generating card download:', error);
+    return res.status(500).send('Failed to generate card');
   }
-
-  let qrPath = guest.qr_code_path;
-
-  if (!qrPath || !fs.existsSync(qrPath)) {
-    const qrFilename = `${guest.id}.png`;
-
-    qrPath = await generateQRCodeToFile(
-      JSON.stringify({
-        guest_id: guest.id,
-        event_id: req.params.eventId,
-        name: guest.name
-      }),
-      qrFilename
-    );
-
-    await guest.update({ qr_code_path: qrPath });
-  }
-
-  const outPath = await generateCardPNG({
-    name: guest.name,
-    type: guest.type,
-    qrPath,
-    baseTemplateFilename: event.card_template || 'card_base6.jpg',
-    outputFilename: `${guest.id}_card.png`,
-    layoutConfig: event.layout_config || {}
-  });
-
-  return res.download(
-    outPath,
-    `${guest.name.replace(/\s+/g, '_')}_card.png`
-  );
 }
 
 async function scanGuest(req, res) {
@@ -1567,5 +1705,6 @@ module.exports = {
   sendScannerLink,
   smsWebhook,
   getCampaignSummary,
-  retryFailedSms
+  retryFailedSms,
+  sendWhatsAppInvite
 };

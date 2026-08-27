@@ -1,4 +1,5 @@
 
+const { Sentry, sentryCampaignContext } = require('./utils/sentry');
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -13,7 +14,7 @@ const attendeesRoutes = require('./routes/attendees');
 const eventRoutes = require('./routes/events');
 const smsQueue = require('./queues/smsQueue');
 const logger = require('./utils/logger');
-const { Sentry, sentryCampaignContext } = require('./utils/sentry');
+
 const { client, gateScanCounter, smsDispatchedCounter } = require('./utils/metrics');
 
 const app = express();

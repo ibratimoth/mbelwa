@@ -23,7 +23,8 @@ const {
   sendScannerLink,
   smsWebhook,
   getCampaignSummary,
-  retryFailedSms
+  retryFailedSms,
+  sendWhatsAppInvite
 } = require('../controllers/attendeesController');
 const logger = require('../utils/logger');
 
@@ -53,6 +54,7 @@ const upload = multer({ storage });
  * =========================
  */
 router.post('/events/:id/send-invite', sendInvite);
+router.post('/events/:id/send-invite-whatsapp', sendWhatsAppInvite);
 // List guests for an event
 router.get('/events/:eventId/guests', list);
 router.post('/events/create', upload.single('card_template'), createEvent);

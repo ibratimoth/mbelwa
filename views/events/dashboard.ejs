@@ -1,289 +1,373 @@
 <% layout('layouts/main', { event: event }) -%>
 
-<div class="row g-4">
-  <div class="col-lg-7 col-xl-8">
-    
-    <div class="card border-0 bg-white p-4 shadow-sm mb-4" style="border-left: 4px solid var(--delle-teal) !important;">
-      <div class="d-flex align-items-center gap-3 mb-2">
-        <i class="bx bx-star fs-3 text-warning"></i>
-        <h3 class="mb-0 fw-bold text-dark"><%= event.title %></h3>
-      </div>
-      
-      <p class="fs-5 text-muted mb-3 fw-medium">
-        <%= event.groom_name %> <i class="bx bx-heart text-danger fs-6 mx-1"></i> <%= event.bride_name %>
-      </p>
+  <div class="row g-4">
+    <div class="col-lg-7 col-xl-8">
 
-      <div class="d-flex flex-wrap gap-3 text-secondary small">
-        <span class="d-inline-flex align-items-center gap-1">
-          <i class="bx bx-map fs-5 text-muted"></i> <%= event.venue %>
-        </span>
-      </div>
-    </div>
+      <div class="card border-0 bg-white p-4 shadow-sm mb-4"
+        style="border-left: 4px solid var(--delle-teal) !important;">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <i class="bx bx-star fs-3 text-warning"></i>
+          <h3 class="mb-0 fw-bold text-dark">
+            <%= event.title %>
+          </h3>
+        </div>
 
-    <div class="row g-3 mb-3">
-      <div class="col-sm-4">
-        <div class="card border-0 bg-white p-3 shadow-sm h-100">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Total Guests</span>
-              <h2 class="fw-bold mt-2 mb-0 text-dark"><%= stats.totalGuests %></h2>
+        <p class="fs-5 text-muted mb-3 fw-medium">
+          <%= event.groom_name %> <i class="bx bx-heart text-danger fs-6 mx-1"></i>
+            <%= event.bride_name %>
+        </p>
+
+        <div class="d-flex flex-wrap gap-3 text-secondary small">
+          <span class="d-inline-flex align-items-center gap-1">
+            <i class="bx bx-map fs-5 text-muted"></i>
+            <%= event.venue %>
+          </span>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-sm-4">
+          <div class="card border-0 bg-white p-3 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Total Guests</span>
+                <h2 class="fw-bold mt-2 mb-0 text-dark">
+                  <%= stats.totalGuests %>
+                </h2>
+              </div>
+              <div class="p-2 bg-light text-secondary rounded-3"><i class="bx bx-group fs-4"></i></div>
             </div>
-            <div class="p-2 bg-light text-secondary rounded-3"><i class="bx bx-group fs-4"></i></div>
+          </div>
+        </div>
+
+        <div class="col-sm-4">
+          <div class="card border-0 bg-white p-3 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Scanned In</span>
+                <h2 class="fw-bold mt-2 mb-0 text-success">
+                  <%= stats.scannedGuests %>
+                </h2>
+              </div>
+              <div class="p-2 bg-light text-success rounded-3"><i class="bx bx-check-circle fs-4"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-4">
+          <div class="card border-0 bg-white p-3 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Double Entries</span>
+                <h2 class="fw-bold mt-2 mb-0 <%= stats.doubleGuests > 0 ? 'text-danger' : 'text-muted' %>">
+                  <%= stats.doubleGuests %>
+                </h2>
+              </div>
+              <div class="p-2 bg-light text-danger rounded-3"><i class="bx bx-error-circle fs-4"></i></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="col-sm-4">
-        <div class="card border-0 bg-white p-3 shadow-sm h-100">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Scanned In</span>
-              <h2 class="fw-bold mt-2 mb-0 text-success"><%= stats.scannedGuests %></h2>
+      <div class="row g-3 mb-4">
+        <div class="col-sm-3">
+          <div class="card border-0 bg-white p-3 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">SMS Sent</span>
+                <h2 class="fw-bold mt-2 mb-0 text-primary">
+                  <%= smsStats.sent %>
+                </h2>
+              </div>
+              <div class="p-2 bg-light text-primary rounded-3"><i class="bx bx-message-dots fs-4"></i></div>
             </div>
-            <div class="p-2 bg-light text-success rounded-3"><i class="bx bx-check-circle fs-4"></i></div>
+          </div>
+        </div>
+
+        <div class="col-sm-3">
+          <div class="card border-0 bg-white p-3 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Delivered</span>
+                <h2 class="fw-bold mt-2 mb-0 text-success">
+                  <%= smsStats.delivered || 0 %>
+                </h2>
+              </div>
+              <div class="p-2 bg-light text-success rounded-3"><i class="bx bx-cloud-upload fs-4"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-3">
+          <div class="card border-0 bg-white p-3 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Pending</span>
+                <h2 class="fw-bold mt-2 mb-0 text-warning">
+                  <%= smsStats.pending || 0 %>
+                </h2>
+              </div>
+              <div class="p-2 bg-light text-warning rounded-3"><i class="bx bx-time-five fs-4"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-3">
+          <div class="card border-0 bg-white p-3 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Failed</span>
+                <h2 class="fw-bold mt-2 mb-0 text-danger">
+                  <%= smsStats.failed || 0 %>
+                </h2>
+              </div>
+              <div class="p-2 bg-light text-danger rounded-3"><i class="bx bx-comment-x fs-4"></i></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="col-sm-4">
-        <div class="card border-0 bg-white p-3 shadow-sm h-100">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Double Entries</span>
-              <h2 class="fw-bold mt-2 mb-0 <%= stats.doubleGuests > 0 ? 'text-danger' : 'text-muted' %>"><%= stats.doubleGuests %></h2>
-            </div>
-            <div class="p-2 bg-light text-danger rounded-3"><i class="bx bx-error-circle fs-4"></i></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-3 mb-4">
-      <div class="col-sm-3">
-        <div class="card border-0 bg-white p-3 shadow-sm h-100">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">SMS Sent</span>
-              <h2 class="fw-bold mt-2 mb-0 text-primary"><%= smsStats.sent %></h2>
-            </div>
-            <div class="p-2 bg-light text-primary rounded-3"><i class="bx bx-message-dots fs-4"></i></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-sm-3">
-        <div class="card border-0 bg-white p-3 shadow-sm h-100">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Delivered</span>
-              <h2 class="fw-bold mt-2 mb-0 text-success"><%= smsStats.delivered || 0 %></h2>
-            </div>
-            <div class="p-2 bg-light text-success rounded-3"><i class="bx bx-cloud-upload fs-4"></i></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-sm-3">
-        <div class="card border-0 bg-white p-3 shadow-sm h-100">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Pending</span>
-              <h2 class="fw-bold mt-2 mb-0 text-warning"><%= smsStats.pending || 0 %></h2>
-            </div>
-            <div class="p-2 bg-light text-warning rounded-3"><i class="bx bx-time-five fs-4"></i></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-sm-3">
-        <div class="card border-0 bg-white p-3 shadow-sm h-100">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Failed</span>
-              <h2 class="fw-bold mt-2 mb-0 text-danger"><%= smsStats.failed || 0 %></h2>
-            </div>
-            <div class="p-2 bg-light text-danger rounded-3"><i class="bx bx-comment-x fs-4"></i></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card border-0 bg-white p-4 shadow-sm mb-4">
-      <h5 class="fw-bold text-dark mb-3"><i class="bx bx-cog me-2 text-secondary"></i>System Operations</h5>
-      
-      <div class="d-flex flex-wrap gap-2 mb-2">
-        <a href="/events/<%= event.id %>/guests" class="btn btn-delle-teal btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-          <i class="bx bx-user-pin fs-5"></i> Manage Guests
-        </a>
-
-        <a href="/events/<%= event.id %>/guests/upload" class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-          <i class="bx bx-file-blank fs-5"></i> Upload CSV
-        </a>
-
-        <a href="/events/<%= event.id %>/scan" class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-          <i class="bx bx-qr-scan fs-5"></i> Scan QR Code
-        </a>
-
-        <button id="generateScannerBtn" class="btn btn-delle-gold btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-          <i class="bx bx-link-external fs-5"></i> Generate Link
-        </button>
-
-        <form id="bulkInviteForm" action="/events/<%= event.id %>/send-invite" method="POST" class="d-inline-block">
-          <input type="hidden" name="eventTitle" value="<%= event.title %>">
-          <button type="submit" id="bulkInviteBtn" class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-            <span id="bulkInviteText"><i class="bx bx-paper-plane fs-5"></i> Send Bulk Invites</span>
-            <span id="bulkInviteSpinner" class="spinner-border spinner-border-sm d-none"></span>
-          </button>
-        </form>
-      </div>
-
-      <div id="bulkInviteStatus" class="small fw-medium mt-1"></div>
-    </div>
-
-    <% if (event.scanner_token) { %>
       <div class="card border-0 bg-white p-4 shadow-sm mb-4">
-        <h5 class="fw-bold text-dark mb-1"><i class="bx bx-message-square-dots me-2 text-secondary"></i>Send Scanner Link</h5>
-        <p class="text-muted small mb-3">Provide system access links to operators via SMS verification.</p>
+        <h5 class="fw-bold text-dark mb-3"><i class="bx bx-cog me-2 text-secondary"></i>System Operations</h5>
 
-        <div class="mb-3">
-          <label class="form-label small fw-bold text-secondary">Recipient Phone Numbers</label>
-          <div class="input-group">
-            <span class="input-group-text bg-light text-muted"><i class="bx bx-phone"></i></span>
-            <input type="text" id="phoneInput" class="form-control" placeholder="071XXXXXXXX, 255XXXXXXXX" />
-          </div>
-          <div class="form-text text-muted small">Separate target phone records cleanly using commas.</div>
-        </div>
-
-        <button id="sendBtn" class="btn btn-delle-teal btn-sm px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="sendBulkScannerLink()">
-          <span id="btnText">Send Access Link</span>
-          <span id="spinner" class="spinner-border spinner-border-sm d-none"></span>
-        </button>
-
-        <div id="smsStatus" class="mt-2 small fw-medium"></div>
-      </div>
-    <% } %>
-
-  </div>
-
-  <div class="col-lg-5 col-xl-4">
-    <% if(event.card_template){ %>
-      <div class="card border-0 bg-white shadow-sm overflow-hidden sticky-top" style="top: 105px; z-index: 10;">
-        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
-          <h5 class="fw-bold text-dark mb-0"><i class="bx bx-image me-2 text-secondary"></i>Template Asset</h5>
-        </div>
-        
-        <div class="card-body px-4 text-center">
-          <div class="bg-light p-2 rounded-3 border mb-3">
-            <img src="/public/templates/<%= event.card_template %>" class="img-fluid rounded" style="max-height: 320px; object-fit: contain;" alt="Card Template Background Canvas">
-          </div>
-          
-          <a href="/events/<%= event.id %>/editor" class="btn btn-delle-gold btn-sm w-100 py-2 d-inline-flex align-items-center justify-content-center gap-2 fw-medium shadow-sm mb-2">
-            <i class="bx bx-edit"></i> Edit Card Layout Template
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          <a href="/events/<%= event.id %>/guests"
+            class="btn btn-delle-teal btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
+            <i class="bx bx-user-pin fs-5"></i> Manage Guests
           </a>
+
+          <a href="/events/<%= event.id %>/guests/upload"
+            class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
+            <i class="bx bx-file-blank fs-5"></i> Upload CSV
+          </a>
+
+          <a href="/events/<%= event.id %>/scan"
+            class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
+            <i class="bx bx-qr-scan fs-5"></i> Scan QR Code
+          </a>
+
+          <button id="generateScannerBtn"
+            class="btn btn-delle-gold btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
+            <i class="bx bx-link-external fs-5"></i> Generate Link
+          </button>
+
+          <form id="bulkInviteForm" action="/events/<%= event.id %>/send-invite" method="POST" class="d-inline-block">
+            <input type="hidden" name="eventTitle" value="<%= event.title %>">
+            <button type="submit" id="bulkInviteBtn"
+              class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
+              <span id="bulkInviteText"><i class="bx bx-paper-plane fs-5"></i> Send Bulk Invites</span>
+              <span id="bulkInviteSpinner" class="spinner-border spinner-border-sm d-none"></span>
+            </button>
+          </form>
+
+          <form id="bulkWhatsAppForm" action="/events/<%= event.id %>/send-invite-whatsapp" method="POST"
+            class="d-inline-block">
+            <input type="hidden" name="eventTitle" value="<%= event.title %>">
+            <button type="submit" id="bulkWhatsAppBtn"
+              class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
+              <span id="bulkWhatsAppText"><i class="bxl-whatsapp fs-5"></i> Send WhatsApp Invites</span>
+              <span id="bulkWhatsAppSpinner" class="spinner-border spinner-border-sm d-none"></span>
+            </button>
+          </form>
+          <div id="bulkWhatsAppStatus"></div>
         </div>
+
+        <div id="bulkInviteStatus" class="small fw-medium mt-1"></div>
       </div>
-    <% } %>
+
+      <% if (event.scanner_token) { %>
+        <div class="card border-0 bg-white p-4 shadow-sm mb-4">
+          <h5 class="fw-bold text-dark mb-1"><i class="bx bx-message-square-dots me-2 text-secondary"></i>Send Scanner
+            Link</h5>
+          <p class="text-muted small mb-3">Provide system access links to operators via SMS verification.</p>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Recipient Phone Numbers</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-muted"><i class="bx bx-phone"></i></span>
+              <input type="text" id="phoneInput" class="form-control" placeholder="071XXXXXXXX, 255XXXXXXXX" />
+            </div>
+            <div class="form-text text-muted small">Separate target phone records cleanly using commas.</div>
+          </div>
+
+          <button id="sendBtn"
+            class="btn btn-delle-teal btn-sm px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2"
+            onclick="sendBulkScannerLink()">
+            <span id="btnText">Send Access Link</span>
+            <span id="spinner" class="spinner-border spinner-border-sm d-none"></span>
+          </button>
+
+          <div id="smsStatus" class="mt-2 small fw-medium"></div>
+        </div>
+        <% } %>
+
+    </div>
+
+    <div class="col-lg-5 col-xl-4">
+      <% if(event.card_template){ %>
+        <div class="card border-0 bg-white shadow-sm overflow-hidden sticky-top" style="top: 105px; z-index: 10;">
+          <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
+            <h5 class="fw-bold text-dark mb-0"><i class="bx bx-image me-2 text-secondary"></i>Template Asset</h5>
+          </div>
+
+          <div class="card-body px-4 text-center">
+            <div class="bg-light p-2 rounded-3 border mb-3">
+              <img src="/public/templates/<%= event.card_template %>" class="img-fluid rounded"
+                style="max-height: 320px; object-fit: contain;" alt="Card Template Background Canvas">
+            </div>
+
+            <a href="/events/<%= event.id %>/editor"
+              class="btn btn-delle-gold btn-sm w-100 py-2 d-inline-flex align-items-center justify-content-center gap-2 fw-medium shadow-sm mb-2">
+              <i class="bx bx-edit"></i> Edit Card Layout Template
+            </a>
+          </div>
+        </div>
+        <% } %>
+    </div>
   </div>
-</div>
 
-<script>
-  const eventId = "<%= event.id %>";
+  <script>
+    const eventId = "<%= event.id %>";
 
-  // Share link generator trigger hook
-  document.getElementById('generateScannerBtn').addEventListener('click', async () => {
-    const res = await fetch('/events/<%= event.id %>/generate-scanner-link', {
-      method: 'POST'
+    // Share link generator trigger hook
+    document.getElementById('generateScannerBtn').addEventListener('click', async () => {
+      const res = await fetch('/events/<%= event.id %>/generate-scanner-link', {
+        method: 'POST'
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        prompt('Active Scanner Entry Link (Copy to share):', data.scanLink);
+      }
     });
 
-    const data = await res.json();
-    if (data.success) {
-      prompt('Active Scanner Entry Link (Copy to share):', data.scanLink);
-    }
-  });
+    // ASYNC AJAX DRIVER: Bulk Invites Ingestion Queue Dispatcher
+    document.getElementById('bulkInviteForm').addEventListener('submit', async function (e) {
+      e.preventDefault(); // Intercept browser redirect routing execution cleanly
 
-  // ASYNC AJAX DRIVER: Bulk Invites Ingestion Queue Dispatcher
-  document.getElementById('bulkInviteForm').addEventListener('submit', async function(e) {
-    e.preventDefault(); // Intercept browser redirect routing execution cleanly
+      if (!confirm('Send Bulk SMS invites to all assigned guests?')) return;
 
-    if(!confirm('Send Bulk SMS invites to all assigned guests?')) return;
+      const btnText = document.getElementById("bulkInviteText");
+      const spinner = document.getElementById("bulkInviteSpinner");
+      const status = document.getElementById("bulkInviteStatus");
+      const submitBtn = document.getElementById("bulkInviteBtn");
 
-    const btnText = document.getElementById("bulkInviteText");
-    const spinner = document.getElementById("bulkInviteSpinner");
-    const status = document.getElementById("bulkInviteStatus");
-    const submitBtn = document.getElementById("bulkInviteBtn");
+      // Freeze UI interaction states during runtime transmission pipelines
+      submitBtn.disabled = true;
+      btnText.innerHTML = "Processing Queue...";
+      spinner.classList.remove("d-none");
+      status.innerHTML = "";
 
-    // Freeze UI interaction states during runtime transmission pipelines
-    submitBtn.disabled = true;
-    btnText.innerHTML = "Processing Queue...";
-    spinner.classList.remove("d-none");
-    status.innerHTML = "";
+      try {
+        const res = await fetch(this.action, {
+          method: "POST",
+          body: new FormData(this)
+        });
 
-    try {
-      const res = await fetch(this.action, {
-        method: "POST",
-        body: new FormData(this)
-      });
+        const data = await res.json();
 
-      const data = await res.json();
-
-      if (data.success) {
-        status.innerHTML = `<span class="text-success d-inline-block mt-2"><i class="bx bx-check-circle me-1"></i>${data.message || 'Bulk generation dispatch completed successfully.'}</span>`;
-      } else {
-        status.innerHTML = `<span class="text-danger d-inline-block mt-2"><i class="bx bx-x-circle me-1"></i>${data.message || 'Server error encountered during bulk assignment routines.'}</span>`;
+        if (data.success) {
+          status.innerHTML = `<span class="text-success d-inline-block mt-2"><i class="bx bx-check-circle me-1"></i>${data.message || 'Bulk generation dispatch completed successfully.'}</span>`;
+        } else {
+          status.innerHTML = `<span class="text-danger d-inline-block mt-2"><i class="bx bx-x-circle me-1"></i>${data.message || 'Server error encountered during bulk assignment routines.'}</span>`;
+        }
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = "<span class='text-danger d-inline-block mt-2'><i class='bx bx-error me-1'></i>Network failure communicating request payload to system endpoint.</span>";
+      } finally {
+        // Re-enable and restore button states
+        submitBtn.disabled = false;
+        btnText.innerHTML = '<i class="bx bx-paper-plane fs-5"></i> Send Bulk Invites';
+        spinner.classList.add("d-none");
       }
-    } catch (err) {
-      console.error(err);
-      status.innerHTML = "<span class='text-danger d-inline-block mt-2'><i class='bx bx-error me-1'></i>Network failure communicating request payload to system endpoint.</span>";
-    } finally {
-      // Re-enable and restore button states
-      submitBtn.disabled = false;
-      btnText.innerHTML = '<i class="bx bx-paper-plane fs-5"></i> Send Bulk Invites';
-      spinner.classList.add("d-none");
-    }
-  });
+    });
 
-  // ASYNC AJAX DRIVER: Remote Verification Operator Link Transmitter
-  async function sendBulkScannerLink() {
-    const input = document.getElementById("phoneInput");
-    const btnText = document.getElementById("btnText");
-    const spinner = document.getElementById("spinner");
-    const status = document.getElementById("smsStatus");
+    // ASYNC AJAX DRIVER: Bulk WhatsApp Invites Ingestion Queue Dispatcher
+    document.getElementById('bulkWhatsAppForm').addEventListener('submit', async function (e) {
+      e.preventDefault(); // Intercept browser redirect routing execution cleanly
 
-    const numbers = input.value
-      .split(",")
-      .map(n => n.trim())
-      .filter(Boolean);
+      if (!confirm('Send WhatsApp invites to all assigned guests?')) return;
 
-    if (!numbers.length) {
-      status.innerHTML = "<span class='text-danger'><i class='bx bx-error-alt me-1'></i>Please provide at least one phone number target.</span>";
-      return;
-    }
+      const btnText = document.getElementById("bulkWhatsAppText");
+      const spinner = document.getElementById("bulkWhatsAppSpinner");
+      const status = document.getElementById("bulkWhatsAppStatus");
+      const submitBtn = document.getElementById("bulkWhatsAppBtn");
 
-    btnText.innerText = "Dispatching...";
-    spinner.classList.remove("d-none");
-    status.innerHTML = "";
+      // Freeze UI interaction states during runtime transmission pipelines
+      submitBtn.disabled = true;
+      btnText.innerHTML = "Processing Queue...";
+      spinner.classList.remove("d-none");
+      status.innerHTML = "";
 
-    try {
-      const res = await fetch(`/events/${eventId}/send-scanner-link`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ numbers })
-      });
+      try {
+        const res = await fetch(this.action, {
+          method: "POST",
+          headers: {
+            'Accept': 'application/json'
+          },
+          body: new FormData(this)
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (data.success) {
-        status.innerHTML = `<span class="text-success"><i class="bx bx-check-circle me-1"></i>${data.message}</span>`;
-        input.value = "";
-      } else {
-        status.innerHTML = `<span class="text-danger"><i class="bx bx-x-circle me-1"></i>${data.message}</span>`;
+        if (data.success) {
+          status.innerHTML = `<span class="text-success d-inline-block mt-2"><i class="bx bx-check-circle me-1"></i>${data.message || 'WhatsApp bulk generation dispatch completed successfully.'}</span>`;
+        } else {
+          status.innerHTML = `<span class="text-danger d-inline-block mt-2"><i class="bx bx-x-circle me-1"></i>${data.message || 'Server error encountered during WhatsApp bulk assignment routines.'}</span>`;
+        }
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = "<span class='text-danger d-inline-block mt-2'><i class='bx bx-error me-1'></i>Network failure communicating request payload to system endpoint.</span>";
+      } finally {
+        // Re-enable and restore button states
+        submitBtn.disabled = false;
+        btnText.innerHTML = '<i class="bxl-whatsapp fs-5"></i> Send WhatsApp Invites';
+        spinner.classList.add("d-none");
       }
-    } catch (err) {
-      console.error(err);
-      status.innerHTML = "<span class='text-danger'><i class='bx bx-error me-1'></i>Network transaction failure during SMS route delivery.</span>";
-    } finally {
-      btnText.innerText = "Send Access Link";
-      spinner.classList.add("d-none");
+    });
+
+    // ASYNC AJAX DRIVER: Remote Verification Operator Link Transmitter
+    async function sendBulkScannerLink() {
+      const input = document.getElementById("phoneInput");
+      const btnText = document.getElementById("btnText");
+      const spinner = document.getElementById("spinner");
+      const status = document.getElementById("smsStatus");
+
+      const numbers = input.value
+        .split(",")
+        .map(n => n.trim())
+        .filter(Boolean);
+
+      if (!numbers.length) {
+        status.innerHTML = "<span class='text-danger'><i class='bx bx-error-alt me-1'></i>Please provide at least one phone number target.</span>";
+        return;
+      }
+
+      btnText.innerText = "Dispatching...";
+      spinner.classList.remove("d-none");
+      status.innerHTML = "";
+
+      try {
+        const res = await fetch(`/events/${eventId}/send-scanner-link`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ numbers })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          status.innerHTML = `<span class="text-success"><i class="bx bx-check-circle me-1"></i>${data.message}</span>`;
+          input.value = "";
+        } else {
+          status.innerHTML = `<span class="text-danger"><i class="bx bx-x-circle me-1"></i>${data.message}</span>`;
+        }
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = "<span class='text-danger'><i class='bx bx-error me-1'></i>Network transaction failure during SMS route delivery.</span>";
+      } finally {
+        btnText.innerText = "Send Access Link";
+        spinner.classList.add("d-none");
+      }
     }
-  }
-</script>
+  </script>
