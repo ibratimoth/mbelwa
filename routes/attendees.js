@@ -100,6 +100,11 @@ router.post('/events/:id/send-scanner-link', sendScannerLink);
 
 router.post('/sms/webhook', smsWebhook);
 
+// Add GET handler for provider verification checks
+router.get('/sms/webhook', (req, res) => {
+  return res.status(200).send('Webhook endpoint active');
+});
+
 router.get(
   '/sms/campaigns/:campaignId/summary',
   getCampaignSummary
