@@ -1095,15 +1095,23 @@ async function sendWhatsAppInvite(req, res) {
       const relativePath = path.relative('public', generatedCardPath).replace(/\\/g, '/');
       const publicCardUrl = `${APP_BASE_URL}/public/${relativePath}`;
 
-      const variables = {
-        guest_name: g.name,
-        groom_name: event.groom_name,
-        bride_name: event.bride_name,
-        card_number: g.card_number,
-        venue: event.venue,
-        event_date: new Date(event.event_date).toLocaleDateString()
-      };
+      // const variables = {
+      //   guest_name: g.name,
+      //   groom_name: event.groom_name,
+      //   bride_name: event.bride_name,
+      //   card_number: g.card_number,
+      //   venue: event.venue,
+      //   event_date: new Date(event.event_date).toLocaleDateString()
+      // };
 
+      const variables = {
+        guest_name: String(g.name),
+        groom_name: String(event.groom_name),
+        bride_name: String(event.bride_name),
+        card_number: String(g.card_number), // Ensures integer 16 becomes "16"
+        venue: String(event.venue),
+        event_date: String(new Date(event.event_date).toLocaleDateString())
+      };
       await SmsLog.create({
         campaign_id: campaign.id,
         event_id: eventId,
