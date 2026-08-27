@@ -133,6 +133,7 @@ const smsWorker = new Worker(
           });
 
           logger.info(`💬 WHATSAPP SENT TO ${r.phone}:`, JSON.stringify(response, null, 2));
+          console.log(`💬 WHATSAPP SENT TO ${r.phone}:`, JSON.stringify(response, null, 2));
 
           await SmsLog.update(
             {
