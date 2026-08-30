@@ -50,6 +50,10 @@ const smsStatsRaw = await SmsLog.findAll({
   group: ['status']
 });
 
+const smsStatsClean = smsStatsRaw.map(stat => stat.get({ plain: true }));
+
+console.log('SMS Status:', smsStatsClean);
+
 const smsStats = {
   sent: 0,
   failed: 0,
