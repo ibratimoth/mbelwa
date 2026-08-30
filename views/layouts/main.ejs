@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -119,50 +117,70 @@
         <span class="navbar-brand-text mb-0 h6 fw-bold">Wedding<span>Manager</span></span>
       </a>
 
-      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav"
+        aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
 
       <div class="collapse navbar-collapse" id="nav">
 
-        <% if (typeof event !== 'undefined' && event) { %>
+        <% if (typeof event !=='undefined' && event) { %>
           <div class="ms-lg-3 my-2 my-lg-0 me-auto">
             <span class="badge badge-event d-inline-flex align-items-center gap-1">
               <i class="bx bx-calendar fs-6"></i>
               <%= event.title %>
             </span>
           </div>
-        <% } %>
-
-        <div class="ms-auto d-flex flex-wrap gap-2 align-items-center">
-          <% if (typeof event !== 'undefined' && event) { %>
-
-            <a href="/events/<%= event.id %>/guests" class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
-              <i class="bx bx-group"></i> Guests
-            </a>
-
-            <a href="/events/<%= event.id %>/guests/upload" class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
-              <i class="bx bx-upload"></i> Upload
-            </a>
-
-            <a href="/events/<%= event.id %>/scan" class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
-              <i class="bx bx-qr-scan"></i> Scan
-            </a>
-
-            <a href="/events/<%= event.id %>" class="btn btn-delle-teal btn-sm d-inline-flex align-items-center gap-1">
-              <i class="bx bx-wreath"></i> My Event
-            </a>
-
-            <a href="/" class="btn btn-delle-gold btn-sm d-inline-flex align-items-center gap-1">
-              <i class="bx bx-grid-alt"></i> Dashboard
-            </a>
-
-          <% } else { %>
-            <span class="text-muted small d-inline-flex align-items-center gap-1">
-              <i class="bx bx-info-circle"></i> No event selected
-            </span>
           <% } %>
-        </div>
+
+            <div class="ms-auto d-flex flex-wrap gap-2 align-items-center">
+              <% if (typeof isAuthenticated !=='undefined' && isAuthenticated) { %>
+
+                <% if (typeof event !=='undefined' && event) { %>
+                  <a href="/events/<%= event.id %>/guests"
+                    class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
+                    <i class="bx bx-group"></i> Guests
+                  </a>
+
+                  <a href="/events/<%= event.id %>/guests/upload"
+                    class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
+                    <i class="bx bx-upload"></i> Upload
+                  </a>
+
+                  <a href="/events/<%= event.id %>/scan"
+                    class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
+                    <i class="bx bx-qr-scan"></i> Scan
+                  </a>
+
+                  <a href="/events/<%= event.id %>"
+                    class="btn btn-delle-teal btn-sm d-inline-flex align-items-center gap-1">
+                    <i class="bx bx-wreath"></i> My Event
+                  </a>
+                  <% } %>
+
+                    <a href="/" class="btn btn-delle-gold btn-sm d-inline-flex align-items-center gap-1">
+                      <i class="bx bx-grid-alt"></i> Dashboard
+                    </a>
+
+                    <form action="/logout" method="POST" class="d-inline">
+                      <button type="submit"
+                        class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1">
+                        <i class="bx bx-log-out"></i> Logout
+                      </button>
+                    </form>
+
+                    <% } else { %>
+
+                      <a href="/login" class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
+                        <i class="bx bx-log-in"></i> Sign In
+                      </a>
+
+                      <a href="/register" class="btn btn-delle-teal btn-sm d-inline-flex align-items-center gap-1">
+                        <i class="bx bx-user-plus"></i> Register
+                      </a>
+
+                      <% } %>
+            </div>
 
       </div>
     </div>

@@ -4,11 +4,12 @@ const { event: Event, guest: Guest, sms_campaign: SmsCampaign,sms_log: SmsLog } 
 const { generatePreviewCard } = require('../utils/cardGenerator');
 const logger = require('../utils/logger');
 const { fn, col } = require('sequelize');
-
+const { ensureAuthenticated } = require('../middleware/auth');
 
 /**
  * EVENT DASHBOARD (single event view)
  */
+router.use(ensureAuthenticated);
 router.get('/events/:eventId', async (req, res) => {
   const event = await Event.findByPk(req.params.eventId);
 

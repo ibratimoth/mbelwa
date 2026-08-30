@@ -28,6 +28,8 @@ const {
 } = require('../controllers/attendeesController');
 const logger = require('../utils/logger');
 
+const { ensureAuthenticated } = require('../middleware/auth');
+
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
 
 const storage = multer.diskStorage({
@@ -53,6 +55,8 @@ const upload = multer({ storage });
  * EVENT-SCOPED GUEST ROUTES
  * =========================
  */
+router.use(ensureAuthenticated);
+
 router.post('/events/:id/send-invite', sendInvite);
 router.post('/events/:id/send-invite-whatsapp', sendWhatsAppInvite);
 // List guests for an event

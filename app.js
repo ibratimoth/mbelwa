@@ -8,6 +8,8 @@ const engine = require('ejs-mate');
 const { createBullBoard } = require('@bull-board/api');
 const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
 const { ExpressAdapter } = require('@bull-board/express');
+const session = require('express-session');
+const { setGlobalLocals } = require('./middleware/auth');
 
 const { sequelize } = require('./models');
 const eventRoutes = require('./routes/events');
@@ -31,6 +33,13 @@ app.use((req, res, next) => {
   console.log(`Incoming: ${req.method} ${req.url}`);
   next();
 });
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+}));
 // Prometheus Metrics Endpoint
 app.get('/metrics', async (req, res) => {
   try {
@@ -50,6 +59,12 @@ app.use(morgan('dev'));
 app.engine('ejs', engine);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+const authRoutes = require('./routes/auth');
+app.use('/', authRoutes);
+
+app.use(setGlobalLocals);
+
 
 app.get('/', async (req, res) => {
   const { event: Event } = require('./models');

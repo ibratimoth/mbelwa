@@ -8,6 +8,12 @@ module.exports = (sequelize, DataTypes) => {
 
     static associate(models) {
 
+      // Belongs to a User
+      event.belongsTo(models.user, {
+        foreignKey: 'user_id',
+        as: 'user'
+      });
+
       // One event has many guests
       event.hasMany(models.guest, {
         foreignKey: 'event_id',
@@ -45,6 +51,15 @@ module.exports = (sequelize, DataTypes) => {
     layout_config: DataTypes.JSON,
 
     scanner_token: DataTypes.STRING,
+
+    user_id: {
+      type: DataTypes.UUID, // Matched to match migration UUID type
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'id'
+      }
+    }
 
   }, {
 
