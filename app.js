@@ -9,7 +9,7 @@ const { createBullBoard } = require('@bull-board/api');
 const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
 const { ExpressAdapter } = require('@bull-board/express');
 const session = require('express-session');
-const { setGlobalLocals } = require('./middleware/auth');
+const { setGlobalLocals,ensureAuthenticated } = require('./middleware/auth');
 
 const { sequelize } = require('./models');
 const eventRoutes = require('./routes/events');
@@ -61,10 +61,11 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 const authRoutes = require('./routes/auth');
+
 app.use('/', authRoutes);
 
 app.use(setGlobalLocals);
-
+app.use(ensureAuthenticated);
 
 app.get('/', async (req, res) => {
   const { event: Event } = require('./models');
