@@ -23,6 +23,8 @@ router.get('/events/:eventId', async (req, res) => {
     where: { event_id: event.id }
   });
 
+  // const totalGuests = 500
+
   const scannedGuests = await Guest.count({
     where: {
       event_id: event.id,
