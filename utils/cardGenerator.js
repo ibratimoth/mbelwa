@@ -36,7 +36,7 @@ async function generateCardPNG({
   const combinedFont = await Jimp.loadFont(Jimp.FONT_SANS_32_WHITE);
 
   // =========================
-  // POSITION CALCULATIONS
+  // POSITION CALCULATIONS 
   // =========================
   const qrSize = Math.round(width * 0.25);
 

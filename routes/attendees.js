@@ -55,6 +55,19 @@ const upload = multer({ storage });
  * EVENT-SCOPED GUEST ROUTES
  * =========================
  */
+
+// Public scanner
+router.get(
+  '/scanner/:token',
+  showPublicScanner
+);
+
+// Scan via token
+router.post(
+  '/scanner/:token/scan',
+  scanGuestByToken
+);
+
 router.use(ensureAuthenticated);
 
 router.post('/events/:id/send-invite', sendInvite);
@@ -88,17 +101,7 @@ router.post(
   generateScannerLink
 );
 
-// Public scanner
-router.get(
-  '/scanner/:token',
-  showPublicScanner
-);
 
-// Scan via token
-router.post(
-  '/scanner/:token/scan',
-  scanGuestByToken
-);
 
 router.post('/events/:id/send-scanner-link', sendScannerLink);
 
