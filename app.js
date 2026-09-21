@@ -63,7 +63,9 @@ app.set('views', path.join(__dirname, 'views'));
 const authRoutes = require('./routes/auth');
 
 app.use('/', authRoutes);
+const attendeesRoutes = require('./routes/attendees');
 
+app.use('/', attendeesRoutes);
 app.use(setGlobalLocals);
 app.use(ensureAuthenticated);
 
@@ -77,9 +79,7 @@ app.get('/', async (req, res) => {
   res.render('events/list', { events });
 });
 
-const attendeesRoutes = require('./routes/attendees');
 
-app.use('/', attendeesRoutes);
 
 app.use('/', eventRoutes);
 
