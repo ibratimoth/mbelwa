@@ -57,16 +57,7 @@ const upload = multer({ storage });
  */
 
 // Public scanner
-router.get(
-  '/scanner/:token',
-  showPublicScanner
-);
 
-// Scan via token
-router.post(
-  '/scanner/:token/scan',
-  scanGuestByToken
-);
 
 router.use(ensureAuthenticated);
 
