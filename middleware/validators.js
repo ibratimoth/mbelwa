@@ -35,4 +35,64 @@ const validateEventInput = [
   }
 ];
 
-module.exports = { validateEventInput };
+const validateRegister = [
+  body('name')
+    .trim()
+    .notEmpty().withMessage('Name is required.')
+    .escape(), // Prevents XSS by escaping HTML characters
+  
+  body('email')
+    .trim()
+    .isEmail().withMessage('Please provide a valid email address.')
+    .normalizeEmail(), // Standardizes email format
+  
+  body('password')
+    .notEmpty().withMessage('Password is required.')
+    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long.'),
+  
+  body('confirm_password')
+    .custom((value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error('Passwords do not match.');
+      }
+      return true;
+    }),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).render('auth/register', {
+        event: null,
+        error: errors.array()[0].msg, // Display the first validation error
+        name: req.body.name,
+        email: req.body.email
+      });
+    }
+    next();
+  }
+];
+
+// Validation rules for Login
+const validateLogin = [
+  body('email')
+    .trim()
+    .isEmail().withMessage('Please provide a valid email address.')
+    .normalizeEmail(),
+
+  body('password')
+    .notEmpty().withMessage('Password is required.'),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).render('auth/login', {
+        event: null,
+        error: errors.array()[0].msg,
+        email: req.body.email
+      });
+    }
+    next();
+  }
+];
+
+module.exports = { validateEventInput, validateRegister, validateLogin };
