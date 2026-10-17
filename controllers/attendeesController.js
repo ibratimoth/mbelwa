@@ -19,6 +19,7 @@ const crypto = require('crypto');
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
 const { Op } = require("sequelize");
+const validator = require('validator');
 
 const SMS_WEBHOOK_TOKEN = process.env.WEBHOOK_SECRET;
 
@@ -783,6 +784,7 @@ async function createEvent(req, res) {
       event_date
     } = req.body;
 
+    console.log('Received event creation data:', req.body);
     const templatePath = req.file
       ? `${req.file.filename}`
       : null;
@@ -836,93 +838,195 @@ async function showUploadForm(req, res) {
   res.render('upload', { event });
 }
 
+// async function handleCsvUpload(req, res) {
+//   if (!req.file) {
+//     return res.status(400).send('No file uploaded.');
+//   }
+
+//   const results = [];
+
+//   const stream = fs.createReadStream(req.file.path)
+//     .pipe(csv({
+//       mapHeaders: ({ header }) =>
+//         header.trim().replace(/^\uFEFF/, '')
+//     }));
+
+//   // stream.on('data', (data) => {
+//   //   results.push({
+//   //     name: data.name,
+//   //     phone: data.phone,
+//   //     type: (data.type?.trim().toLowerCase() === 'double') ? 'double' : 'single'
+//   //   });
+//   // });
+
+//   stream.on('data', (data) => {
+
+//     let phone = (data.phone || '').trim();
+
+//     // remove spaces and non-digits except +
+//     phone = phone.replace(/\s+/g, '');
+
+//     // convert starting 0 → 255 (Tanzania format)
+//     if (phone.startsWith('0')) {
+//       phone = '255' + phone.substring(1);
+//     }
+
+//     // if already starts with +255 → remove +
+//     if (phone.startsWith('+255')) {
+//       phone = phone.replace('+', '');
+//     }
+
+//     // if user entered raw 9 digits like 7XXXXXXXX
+//     if (phone.length === 9 && !phone.startsWith('255')) {
+//       phone = '255' + phone;
+//     }
+
+//     results.push({
+//       name: data.name,
+//       phone: phone,
+//       type: (data.type?.trim().toLowerCase() === 'double') ? 'double' : 'single'
+//     });
+//   });
+
+//   stream.on('end', async () => {
+//     try {
+//       for (const row of results) {
+//         const id = uuidv4();
+//         const qrFilename = `${id}.png`;
+
+//         const qrPath = await generateQRCodeToFile(
+//           JSON.stringify({
+//             guest_id: id,
+//             event_id: req.params.eventId,
+//             name: row.name
+//           }),
+//           qrFilename
+//         );
+
+//         await Guest.create({
+//           id,
+//           event_id: req.params.eventId,
+//           name: row.name,
+//           phone: row.phone,
+//           type: row.type,
+//           qr_code_path: qrPath,
+//           scans: 0
+//         });
+//       }
+
+//       return res.redirect(`/events/${req.params.eventId}/guests`);
+//     } catch (e) {
+//       logger.error(e);
+//       return res.status(500).send('Error processing CSV');
+//     }
+//   });
+
+//   stream.on('error', (err) => {
+//     logger.error(err);
+//     return res.status(500).send('Failed to process CSV');
+//   });
+// }
+
 async function handleCsvUpload(req, res) {
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
   }
 
-  const results = [];
-
-  const stream = fs.createReadStream(req.file.path)
-    .pipe(csv({
-      mapHeaders: ({ header }) =>
-        header.trim().replace(/^\uFEFF/, '')
-    }));
-
-  // stream.on('data', (data) => {
-  //   results.push({
-  //     name: data.name,
-  //     phone: data.phone,
-  //     type: (data.type?.trim().toLowerCase() === 'double') ? 'double' : 'single'
-  //   });
-  // });
-
-  stream.on('data', (data) => {
-
-    let phone = (data.phone || '').trim();
-
-    // remove spaces and non-digits except +
-    phone = phone.replace(/\s+/g, '');
-
-    // convert starting 0 → 255 (Tanzania format)
-    if (phone.startsWith('0')) {
-      phone = '255' + phone.substring(1);
-    }
-
-    // if already starts with +255 → remove +
-    if (phone.startsWith('+255')) {
-      phone = phone.replace('+', '');
-    }
-
-    // if user entered raw 9 digits like 7XXXXXXXX
-    if (phone.length === 9 && !phone.startsWith('255')) {
-      phone = '255' + phone;
-    }
-
-    results.push({
-      name: data.name,
-      phone: phone,
-      type: (data.type?.trim().toLowerCase() === 'double') ? 'double' : 'single'
+  try {
+    // 1. SECURITY: Verify that the event exists AND belongs to the logged-in user
+    const event = await Event.findOne({
+      where: {
+        id: req.params.eventId,
+        user_id: req.session.userId // Ensures ownership
+      }
     });
-  });
 
-  stream.on('end', async () => {
-    try {
-      for (const row of results) {
-        const id = uuidv4();
-        const qrFilename = `${id}.png`;
+    if (!event) {
+      return res.status(403).send('Unauthorized or event not found');
+    }
 
-        const qrPath = await generateQRCodeToFile(
-          JSON.stringify({
-            guest_id: id,
-            event_id: req.params.eventId,
-            name: row.name
-          }),
-          qrFilename
-        );
+    const results = [];
 
-        await Guest.create({
-          id,
-          event_id: req.params.eventId,
-          name: row.name,
-          phone: row.phone,
-          type: row.type,
-          qr_code_path: qrPath,
-          scans: 0
-        });
+    const stream = fs.createReadStream(req.file.path)
+      .pipe(csv({
+        mapHeaders: ({ header }) =>
+          header.trim().replace(/^\uFEFF/, '')
+      }));
+
+    stream.on('data', (data) => {
+      let phone = (data.phone || '').trim();
+
+      // Remove spaces and non-digits except +
+      phone = phone.replace(/\s+/g, '');
+
+      // Convert starting 0 → 255 (Tanzania format)
+      if (phone.startsWith('0')) {
+        phone = '255' + phone.substring(1);
       }
 
-      return res.redirect(`/events/${req.params.eventId}/guests`);
-    } catch (e) {
-      logger.error(e);
-      return res.status(500).send('Error processing CSV');
-    }
-  });
+      // If already starts with +255 → remove +
+      if (phone.startsWith('+255')) {
+        phone = phone.replace('+', '');
+      }
 
-  stream.on('error', (err) => {
+      // If user entered raw 9 digits like 7XXXXXXXX
+      if (phone.length === 9 && !phone.startsWith('255')) {
+        phone = '255' + phone;
+      }
+
+      // 2. SECURITY: Escape the name to sanitize XSS payloads (e.g., <img src=x onerror="...">)
+      const sanitizedName = validator.escape((data.name || '').trim());
+      const sanitizedType = (data.type?.trim().toLowerCase() === 'double') ? 'double' : 'single';
+
+      results.push({
+        name: sanitizedName,
+        phone: phone,
+        type: sanitizedType
+      });
+    });
+
+    stream.on('end', async () => {
+      try {
+        for (const row of results) {
+          const id = uuidv4();
+          const qrFilename = `${id}.png`;
+
+          const qrPath = await generateQRCodeToFile(
+            JSON.stringify({
+              guest_id: id,
+              event_id: req.params.eventId,
+              name: row.name
+            }),
+            qrFilename
+          );
+
+          await Guest.create({
+            id,
+            event_id: req.params.eventId,
+            name: row.name,
+            phone: row.phone,
+            type: row.type,
+            qr_code_path: qrPath,
+            scans: 0
+          });
+        }
+
+        return res.redirect(`/events/${req.params.eventId}/guests`);
+      } catch (e) {
+        logger.error(e);
+        return res.status(500).send('Error processing CSV');
+      }
+    });
+
+    stream.on('error', (err) => {
+      logger.error(err);
+      return res.status(500).send('Failed to process CSV');
+    });
+
+  } catch (err) {
     logger.error(err);
-    return res.status(500).send('Failed to process CSV');
-  });
+    return res.status(500).send('Server error during CSV processing');
+  }
 }
 
 async function editForm(req, res) {

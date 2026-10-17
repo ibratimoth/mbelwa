@@ -23,6 +23,7 @@
     "ejs-mate": "^4.0.0",
     "express": "^4.18.2",
     "express-session": "^1.19.0",
+    "express-validator": "^7.3.2",
     "ioredis": "^5.11.0",
     "jimp": "^0.16.1",
     "morgan": "^1.10.1",
@@ -37,7 +38,8 @@
     "qrcode": "^1.5.1",
     "rotating-file-stream": "^3.2.9",
     "sequelize": "^6.31.1",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "validator": "^13.15.35"
   },
   "devDependencies": {
     "nodemon": "^2.0.22",
