@@ -1,0 +1,44 @@
+<% layout('layouts/main') %>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6 text-center">
+      
+      <!-- Error Icon Card -->
+      <div class="card shadow-sm border-0 p-5 bg-white" style="border-top: 4px solid #dc3545 !important;">
+        <div class="card-body">
+          
+          <div class="mb-4">
+            <span class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle" style="width: 80px; height: 80px;">
+              <i class="bx bx-error-alt fs-1"></i>
+            </span>
+          </div>
+
+          <h2 class="fw-bold text-dark mb-2">Unexpected Error Occurred</h2>
+          <p class="text-muted mb-4">
+            <%= message || "Something went wrong on our servers. Don't worry, our team has been notified." %>
+          </p>
+
+          <div class="d-flex justify-content-center gap-3">
+            <a href="/" class="btn btn-delle-teal px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm">
+              <i class="bx bx-home fs-5"></i> Back to Dashboard
+            </a>
+            <button onclick="window.location.reload()" class="btn btn-light border px-4 py-2 d-inline-flex align-items-center gap-2">
+              <i class="bx bx-refresh fs-5"></i> Try Again
+            </button>
+          </div>
+
+          <!-- Developer Stack Trace (Only shows if passed from backend in development mode) -->
+          <% if (process.env.NODE_ENV === 'development' && error && error.stack) { %>
+            <div class="text-start mt-5 pt-3 border-top">
+              <span class="badge bg-dark mb-2">Debug Stack Trace (Dev Only)</span>
+              <pre class="bg-light p-3 rounded text-danger small overflow-auto" style="max-height: 200px;"><code><%= error.stack %></code></pre>
+            </div>
+          <% } %>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

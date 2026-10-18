@@ -31,6 +31,8 @@ const logger = require('../utils/logger');
 const { ensureAuthenticated } = require('../middleware/auth');
 
 const { validateEventInput } = require('../middleware/validators');
+const { decryptRouteIds } = require('../middleware/decryptParams');
+const { verifyEventOwnership } = require('../middleware/authOwnership');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
 
@@ -109,40 +111,40 @@ const upload = multer({
 
 router.use(ensureAuthenticated);
 
-router.post('/events/:id/send-invite', sendInvite);
-router.post('/events/:id/send-invite-whatsapp', sendWhatsAppInvite);
+router.post('/events/:id/send-invite', decryptRouteIds, sendInvite);
+router.post('/events/:id/send-invite-whatsapp', decryptRouteIds, sendWhatsAppInvite);
 // List guests for an event
-router.get('/events/:eventId/guests', list);
+router.get('/events/:eventId/guests', decryptRouteIds, verifyEventOwnership, list);
 router.post('/events/create', upload.single('card_template'), validateEventInput, createEvent);
 
-router.get('/events/:id/preview', previewCard);
-router.post('/events/:id/layout', updateLayoutConfig);
-router.get('/events/:id/editor', showEditor);
+router.get('/events/:id/preview', decryptRouteIds, verifyEventOwnership,previewCard);
+router.post('/events/:id/layout', decryptRouteIds, updateLayoutConfig);
+router.get('/events/:id/editor', decryptRouteIds, verifyEventOwnership, showEditor);
 
 // Upload guests
-router.get('/events/:eventId/guests/upload', showUploadForm);
-router.post('/events/:eventId/guests/upload', upload.single('csvfile'), handleCsvUpload);
+router.get('/events/:eventId/guests/upload', decryptRouteIds, verifyEventOwnership,showUploadForm);
+router.post('/events/:eventId/guests/upload', decryptRouteIds, upload.single('csvfile'), handleCsvUpload);
 
 // Edit guest
-router.get('/events/:eventId/guests/:id/edit', editForm);
-router.post('/events/:eventId/guests/:id/edit', updateGuest);
+router.get('/events/:eventId/guests/:id/edit', decryptRouteIds, verifyEventOwnership, editForm);
+router.post('/events/:eventId/guests/:id/edit', decryptRouteIds, updateGuest);
 
 // Download card
-router.get('/events/:eventId/guests/:id/download', downloadCard);
+router.get('/events/:eventId/guests/:id/download', decryptRouteIds, verifyEventOwnership, downloadCard);
 
 // Scan (QR validation)
-router.get('/events/:eventId/scan', showScan);
-router.post('/events/:eventId/scan', scanGuest);
+router.get('/events/:eventId/scan', decryptRouteIds, verifyEventOwnership, showScan);
+router.post('/events/:eventId/scan', decryptRouteIds,scanGuest);
 
 // Generate scanner link
 router.post(
-  '/events/:id/generate-scanner-link',
+  '/events/:id/generate-scanner-link', decryptRouteIds,
   generateScannerLink
 );
 
 
 
-router.post('/events/:id/send-scanner-link', sendScannerLink);
+router.post('/events/:id/send-scanner-link', decryptRouteIds, sendScannerLink);
 
 router.post('/sms/webhook', smsWebhook);
 
@@ -152,12 +154,12 @@ router.get('/sms/webhook', (req, res) => {
 });
 
 router.get(
-  '/sms/campaigns/:campaignId/summary',
+  '/sms/campaigns/:campaignId/summary', decryptRouteIds,
   getCampaignSummary
 );
 
 router.post(
-  '/sms/campaigns/:campaignId/retry-failed',
+  '/sms/campaigns/:campaignId/retry-failed', decryptRouteIds,
   retryFailedSms
 );
 

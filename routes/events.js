@@ -1,86 +1,97 @@
 const express = require('express');
 const router = express.Router();
-const { event: Event, guest: Guest, sms_campaign: SmsCampaign,sms_log: SmsLog } = require('../models');
+const { event: Event, guest: Guest, sms_campaign: SmsCampaign, sms_log: SmsLog } = require('../models');
 const { generatePreviewCard } = require('../utils/cardGenerator');
 const logger = require('../utils/logger');
 const { fn, col } = require('sequelize');
 const { ensureAuthenticated } = require('../middleware/auth');
+const { decryptRouteIds } = require('../middleware/decryptParams');
+const { verifyEventOwnership } = require('../middleware/authOwnership');
 
 /**
  * EVENT DASHBOARD (single event view)
  */
 router.use(ensureAuthenticated);
-router.get('/events/:eventId', async (req, res) => {
-  const event = await Event.findByPk(req.params.eventId);
+router.get('/events/:eventId',  decryptRouteIds, verifyEventOwnership, async (req, res) => {
+  try {
+    const event = await Event.findByPk(req.params.eventId);
 
-  if (!event) {
-    return res.status(404).send('Event not found');
+    if (!event) {
+      return res.status(404).send('Event not found');
+    }
+
+    const previewCardPath = await generatePreviewCard(event);
+
+    const totalGuests = await Guest.count({
+      where: { event_id: event.id }
+    });
+
+    // const totalGuests = 500
+
+    const scannedGuests = await Guest.count({
+      where: {
+        event_id: event.id,
+        scans: { [require('sequelize').Op.gt]: 0 }
+      }
+    });
+
+    const doubleGuests = await Guest.count({
+      where: {
+        event_id: event.id,
+        type: 'double'
+      }
+    });
+
+    logger.info(`Event ${event.id} stats: Total=${totalGuests}, Scanned=${scannedGuests}, Double=${doubleGuests}`);
+
+    const smsStatsRaw = await SmsLog.findAll({
+      attributes: [
+        'status',
+        [fn('COUNT', col('id')), 'count']
+      ],
+      where: {
+        event_id: event.id
+      },
+      group: ['status']
+    });
+
+    const smsStatsClean = smsStatsRaw.map(stat => stat.get({ plain: true }));
+
+    console.log('SMS Status:', smsStatsClean);
+
+    const smsStats = {
+      sent: 0,
+      failed: 0,
+      pending: 0,
+      delivered: 0
+    };
+
+    smsStatsRaw.forEach(row => {
+      const status = row.status.toLowerCase();
+      const count = parseInt(row.get('count')) || 0;
+
+      logger.info(`SMS Status ${status}: ${count}`);
+      smsStats[status] = count;
+    });
+
+    res.render('events/dashboard', {
+      event,
+      stats: {
+        totalGuests,
+        scannedGuests,
+        doubleGuests
+      },
+      previewCardPath,
+      smsStats
+    });
+  } catch (error) {
+    logger.error(`Error fetching event dashboard for ID ${req.params.eventId}:`, error);
+    return res.status(500).render('error', {
+      status: 500,
+      message: 'Internal Server Error.',
+      error: null
+    });
   }
-
-  const previewCardPath = await generatePreviewCard(event);
-
-  const totalGuests = await Guest.count({
-    where: { event_id: event.id }
-  });
-
-  // const totalGuests = 500
-
-  const scannedGuests = await Guest.count({
-    where: {
-      event_id: event.id,
-      scans: { [require('sequelize').Op.gt]: 0 }
-    }
-  });
-
-  const doubleGuests = await Guest.count({
-    where: {
-      event_id: event.id,
-      type: 'double'
-    }
-  });
-
-  logger.info(`Event ${event.id} stats: Total=${totalGuests}, Scanned=${scannedGuests}, Double=${doubleGuests}`);
-
-const smsStatsRaw = await SmsLog.findAll({
-  attributes: [
-    'status',
-    [fn('COUNT', col('id')), 'count']
-  ],
-  where: {
-    event_id: event.id
-  },
-  group: ['status']
-});
-
-const smsStatsClean = smsStatsRaw.map(stat => stat.get({ plain: true }));
-
-console.log('SMS Status:', smsStatsClean);
-
-const smsStats = {
-  sent: 0,
-  failed: 0,
-  pending: 0,
-  delivered: 0
-};
-
-smsStatsRaw.forEach(row => {
-  const status = row.status.toLowerCase();
-  const count = parseInt(row.get('count')) || 0;
-
-  logger.info(`SMS Status ${status}: ${count}`);
-  smsStats[status] = count;
-});
-
-  res.render('events/dashboard', {
-    event,
-    stats: {
-      totalGuests,
-      scannedGuests,
-      doubleGuests
-    },
-    previewCardPath,
-    smsStats
-  });
 });
 
 module.exports = router;
