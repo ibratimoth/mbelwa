@@ -75,12 +75,9 @@ app.use(ensureAuthenticated);
 app.get('/', async (req, res) => {
   const { event: Event } = require('./models');
 
-  // const events = await Event.findAll({
-  //   order: [['createdAt', 'DESC']],
-  //   where: {user_id: req.session.userId}
-  // });
   const events = await Event.findAll({
-    order: [['createdAt', 'DESC']]
+    order: [['createdAt', 'DESC']],
+    where: {user_id: req.session.userId}
   });
 
   res.render('events/list', { events });
