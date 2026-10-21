@@ -21,6 +21,7 @@ const { autoEncryptView } = require('./middleware/autoEncryptView');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.disable('x-powered-by');
 
 if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app); 
