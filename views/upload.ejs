@@ -1,153 +1,308 @@
-<!-- 
-
 <% layout('layouts/main', { event: event }) -%>
 
-<h3 class="mb-3">Upload Guests CSV</h3>
+<style>
+  :root {
+    --delle-teal: #0e697b;
+    --delle-teal-hover: #0a5160;
+    --delle-teal-soft: rgba(14, 105, 123, 0.08);
+    --delle-gold: #e5a000;
+    --delle-gold-hover: #c48c17;
+    --delle-gold-soft: rgba(229, 160, 0, 0.12);
+    --delle-border: rgba(0, 0, 0, 0.08);
+  }
 
-<p class="text-muted">
-  CSV format: <code>name,type,phone</code>
-</p>
+  /* Workstation Card Shells */
+  .import-card {
+    background: #ffffff;
+    border: 1px solid var(--delle-border);
+    border-radius: 18px;
+    overflow: hidden;
+  }
 
-<form action="/events/<%= event.id %>/guests/upload"
-      method="post"
-      enctype="multipart/form-data">
+  /* Interactive Dropzone UI */
+  .dropzone-box {
+    border: 2px dashed rgba(14, 105, 123, 0.25);
+    background: var(--delle-teal-soft);
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+  }
 
-  <input type="file"
-         name="csvfile"
-         class="form-control mb-3"
-         accept=".csv"
-         required>
+  .dropzone-box:hover, .dropzone-box.dragover {
+    border-color: var(--delle-teal);
+    background: rgba(14, 105, 123, 0.12);
+    transform: translateY(-2px);
+  }
 
-  <button class="btn btn-primary">
-    Upload
-  </button>
+  .dropzone-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    background: #ffffff;
+    color: var(--delle-teal);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
 
-</form> -->
+  /* Code Format Snippet */
+  .code-spec-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 12px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.8rem;
+  }
 
-<% layout('layouts/main', { event: event }) -%>
+  /* Buttons bound to Brand Palette */
+  .btn-delle-teal {
+    background-color: var(--delle-teal);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
 
-<div class="row g-4 mb-5">
-  <!-- LEFT COLUMN: INSTRUCTIONS & FILE INPUT FORM -->
-  <div class="col-lg-5">
-    
-    <!-- Guidelines Card -->
-    <div class="card border-0 bg-white p-4 shadow-sm mb-4" style="border-left: 4px solid var(--delle-teal) !important;">
-      <div class="d-flex align-items-center gap-2 mb-3">
-        <i class="bx bx-info-circle fs-4 text-secondary"></i>
-        <h5 class="fw-bold text-dark mb-0">CSV Requirements</h5>
+  .btn-delle-teal:hover {
+    background-color: var(--delle-teal-hover);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(14, 105, 123, 0.25);
+  }
+
+  .btn-delle-gold {
+    background-color: var(--delle-gold);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .btn-delle-gold:hover {
+    background-color: var(--delle-gold-hover);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(229, 160, 0, 0.25);
+  }
+
+  .btn-delle-outline {
+    background-color: #ffffff;
+    color: var(--delle-teal);
+    border: 1px solid rgba(14, 105, 123, 0.25);
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .btn-delle-outline:hover {
+    background-color: var(--delle-teal-soft);
+    border-color: var(--delle-teal);
+    color: var(--delle-teal);
+  }
+
+  /* Preview Table Custom Scrollbar */
+  .preview-scroll-area {
+    max-height: 380px;
+    overflow-y: auto;
+  }
+</style>
+
+<!-- HEADER WORKSTATION BANNER -->
+<div class="import-card p-4 shadow-sm mb-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div class="d-flex align-items-center gap-3">
+      <div class="p-3 rounded-3" style="background: var(--delle-teal-soft); color: var(--delle-teal);">
+        <i class="bx bx-cloud-upload fs-3"></i>
       </div>
-      
-      <p class="text-muted small">
-        Please ensure your spreadsheet columns are structured precisely in the following lowercase order without headers, or using exactly these header labels:
-      </p>
-      
-      <div class="bg-light p-3 rounded-3 border font-monospace small mb-3 text-dark">
-        name,type,phone<br>
-        John Doe,Single,255712345678<br>
-        Jane Smith,Double,255787654321
+      <div>
+        <h3 class="mb-0 fw-bold text-dark">Batch Guest Import Workstation</h3>
+        <p class="text-muted small mb-0"><%= event.title %></p>
       </div>
-      
-      <div class="mb-2">
-        <button type="button" class="btn btn-delle-gold btn-sm d-inline-flex align-items-center gap-2 w-100 justify-content-center fw-medium shadow-sm" onclick="downloadSampleCSV()">
-          <i class="bx bx-download fs-5"></i> Download Sample Excel Template
-        </button>
-      </div>
-      
-      <p class="text-muted fs-7 mb-0 mt-3">
-        <i class="bx bx-error text-warning me-1"></i> Phone numbers should not include country codes (e.g., 255...) or start with Zero (e.g., 0..) for reliable SMS message delivery.
-      </p>
     </div>
 
-    <!-- Upload Form Card -->
-    <div class="card border-0 bg-white p-4 shadow-sm">
-      <h6 class="fw-bold text-dark mb-3"><i class="bx bx-file-find me-2 text-secondary"></i>Select Spreadsheet</h6>
+    <a href="/events/<%= event.id %>/guests" class="btn btn-delle-outline px-3.5 py-2 d-inline-flex align-items-center gap-2">
+      <i class="bx bx-arrow-back fs-5"></i>
+      <span>Back to Directory</span>
+    </a>
+  </div>
+</div>
+
+<div class="row g-4 mb-5">
+
+  <!-- LEFT COLUMN: FILE DROPZONE & FORMATTING GUIDELINES -->
+  <div class="col-lg-5">
+    
+    <!-- Upload Controller Form Card -->
+    <div class="import-card p-4 shadow-sm mb-4">
+      <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+        <i class="bx bx-file text-secondary fs-5"></i> Select CSV Data File
+      </h6>
       
-      <form action="/events/<%= event.id %>/guests/upload" method="post" enctype="multipart/form-data">
-        <div class="mb-4">
-          <label class="form-label small fw-bold text-secondary">Choose CSV File</label>
-          <div class="input-group">
-            <input type="file" name="csvfile" id="csvFileInput" class="form-control" accept=".csv" required>
+      <form action="/events/<%= event.id %>/guests/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <!-- Visual Dropzone -->
+        <div class="dropzone-box mb-3" id="dropzone">
+          <div class="dropzone-icon mb-2">
+            <i class="bx bx-spreadsheet"></i>
           </div>
+          <h6 class="fw-bold text-dark mb-1">Drag and drop CSV file here</h6>
+          <p class="text-muted small mb-3">or click to browse local storage</p>
+          <span class="badge rounded-pill bg-light text-dark border px-3 py-1.5 fs-8">Supports .CSV files</span>
+          
+          <input type="file" name="csvfile" id="csvFileInput" class="d-none" accept=".csv" required>
         </div>
 
-        <div class="d-flex gap-2">
-          <a href="/events/<%= event.id %>" class="btn btn-light border btn-sm px-3 py-2 fw-medium">Cancel</a>
-          <button type="submit" class="btn btn-delle-teal btn-sm px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2">
-            <i class="bx bx-upload fs-5"></i> Begin Import
+        <!-- Selected File Status Badge -->
+        <div id="fileSelectedBadge" class="alert alert-success d-none py-2 px-3 mb-3 d-flex align-items-center justify-content-between rounded-3">
+          <span class="small fw-semibold text-truncate me-2" id="fileNameText">selected_file.csv</span>
+          <i class="bx bx-check-circle fs-5 flex-shrink-0"></i>
+        </div>
+
+        <div class="d-flex gap-2 pt-2">
+          <a href="/events/<%= event.id %>" class="btn btn-light border btn-sm px-3.5 py-2 fw-semibold rounded-3 text-secondary">Cancel</a>
+          <button type="submit" class="btn btn-delle-teal btn-sm px-4 py-2 w-100 shadow-sm d-inline-flex align-items-center justify-content-center gap-2">
+            <i class="bx bx-upload fs-5"></i>
+            <span>Execute Import</span>
           </button>
         </div>
       </form>
     </div>
 
-  </div>
-
-  <!-- RIGHT COLUMN: CLIENT-SIDE LIVE DATA PARSING PREVIEW -->
-  <div class="col-lg-7">
-    <div class="card border-0 bg-white shadow-sm p-4 h-100 d-flex flex-column">
-      <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
-        <div>
-          <h6 class="fw-bold text-dark mb-1">File Preview</h6>
-          <span class="text-muted small" id="previewStatus">No data staged for parsing yet</span>
-        </div>
-        <i class="bx bx-table fs-3 text-muted" id="previewIcon"></i>
+    <!-- Requirements & Template Card -->
+    <div class="import-card p-4 shadow-sm">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bx bx-info-circle fs-5" style="color: var(--delle-teal);"></i>
+        <h6 class="fw-bold text-dark mb-0">CSV Formatting Specification</h6>
       </div>
 
-      <!-- Scrollable Data Table Container -->
-      <div class="table-responsive flex-grow-1" id="previewContainer" style="display: none; max-height: 380px;">
+      <p class="text-muted small mb-2">
+        Headers must follow these precise lowercase field names:
+      </p>
+
+      <!-- Code Block Format -->
+      <div class="code-spec-box p-3 mb-3 shadow-2xs">
+        <div class="text-warning mb-1">name,type,phone</div>
+        <div class="text-white-50">John Doe,Single,712345678</div>
+        <div class="text-white-50">Jane Smith,Double,787654321</div>
+      </div>
+
+      <button type="button" class="btn btn-delle-gold btn-sm w-100 py-2.5 d-inline-flex align-items-center justify-content-center gap-2 mb-3" onclick="downloadSampleCSV()">
+        <i class="bx bx-download fs-5"></i>
+        <span>Download Sample CSV Template</span>
+      </button>
+
+      <div class="p-2.5 rounded-3 bg-warning-subtle text-warning-emphasis small border border-warning-subtle">
+        <i class="bx bx-error-circle me-1 align-middle"></i>
+        <strong>Phone Format Note:</strong> Omit country codes (e.g., <code>255</code>) and leading zeroes (e.g., <code>0712...</code>) for reliable SMS delivery.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN: DYNAMIC DATA PREVIEW CANVAS -->
+  <div class="col-lg-7">
+    <div class="import-card p-4 shadow-sm h-100 d-flex flex-column">
+      
+      <div class="mb-3 pb-3 border-bottom d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <i class="bx bx-table text-secondary fs-5"></i> Staging Canvas
+          </h6>
+          <span class="text-muted small" id="previewStatus">No data staged for ingestion</span>
+        </div>
+        <div id="previewBadge" class="badge rounded-pill bg-light text-muted border px-3 py-1.5">
+          0 Rows
+        </div>
+      </div>
+
+      <!-- Dynamic Data Table Canvas -->
+      <div class="preview-scroll-area flex-grow-1" id="previewContainer" style="display: none;">
         <table class="table table-hover align-middle border small mb-0">
           <thead class="table-light sticky-top">
             <tr>
-              <th scope="col" class="py-2 text-secondary fw-bold" style="width: 50px;">#</th>
-              <th scope="col" class="py-2 text-secondary fw-bold">Guest Name (name)</th>
-              <th scope="col" class="py-2 text-secondary fw-bold">Card Type (type)</th>
-              <th scope="col" class="py-2 text-secondary fw-bold">Phone Number (phone)</th>
+              <th scope="col" class="py-2.5 text-secondary fw-bold" style="width: 50px;">#</th>
+              <th scope="col" class="py-2.5 text-secondary fw-bold">Guest Name</th>
+              <th scope="col" class="py-2.5 text-secondary fw-bold">Pass Type</th>
+              <th scope="col" class="py-2.5 text-secondary fw-bold">Phone Number</th>
             </tr>
           </thead>
           <tbody id="previewTableBody">
-            <!-- Dynamic rows inject here via JS mapping -->
+            <!-- Dynamic Parsed Rows Insert Here -->
           </tbody>
         </table>
       </div>
 
       <!-- Empty Visual State Backdrop -->
       <div id="previewPlaceholder" class="d-flex flex-column align-items-center justify-content-center text-center py-5 flex-grow-1 bg-light rounded-3 border border-dashed">
-        <i class="bx bx-spreadsheet text-muted mb-2" style="font-size: 3.5rem;"></i>
-        <p class="text-secondary small mb-0 px-3">Select a valid .csv template file from your system storage to review structured row allocations on this canvas grid.</p>
+        <div class="p-3 rounded-circle bg-white shadow-2xs mb-2" style="color: var(--delle-teal);">
+          <i class="bx bx-spreadsheet fs-1"></i>
+        </div>
+        <h6 class="fw-bold text-dark mb-1">Staging Area Ready</h6>
+        <p class="text-muted small mb-0 px-4">Select or drop a valid <code>.csv</code> file to review structured record rows before processing.</p>
       </div>
 
     </div>
   </div>
+
 </div>
 
-<!-- CLIENT PREVIEW DATA UTILITY & TEMPLATE EXPORTER ENGINE -->
+<!-- PREVIEW & TEMPLATE DOWNLOAD ENGINE -->
 <script>
-  // Function to dynamically generate and download the sample CSV template
-  function downloadSampleCSV() {
-    const csvContent = "name,type,phone\nJohn Doe,Single,712345678\nJane Smith,Double,787654321\nOmari Hamisi,Single,654321098";
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "wedding_guest_template.csv");
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('csvFileInput');
+  const fileBadge = document.getElementById('fileSelectedBadge');
+  const fileNameText = document.getElementById('fileNameText');
 
-  // Client-side parser preview logic
-  document.getElementById('csvFileInput').addEventListener('change', function(e) {
-    const file = e.target.files[0];
+  // Trigger file input on dropzone click
+  dropzone.addEventListener('click', () => fileInput.click());
+
+  // Drag and drop event handling
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    }, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+    }, false);
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files.length) {
+      fileInput.files = files;
+      handleFile(files[0]);
+    }
+  });
+
+  fileInput.addEventListener('change', function(e) {
+    if (e.target.files.length) {
+      handleFile(e.target.files[0]);
+    }
+  });
+
+  function handleFile(file) {
+    fileNameText.innerText = file.name;
+    fileBadge.classList.remove('d-none');
+
     const container = document.getElementById('previewContainer');
     const placeholder = document.getElementById('previewPlaceholder');
     const tableBody = document.getElementById('previewTableBody');
     const statusText = document.getElementById('previewStatus');
-    const previewIcon = document.getElementById('previewIcon');
-
-    if (!file) return;
+    const previewBadge = document.getElementById('previewBadge');
 
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -169,14 +324,14 @@
           rowCount++;
           
           const gName = columns[0] || '<span class="text-danger italic">Missing</span>';
-          const gType = columns[1] || '<span class="text-muted">—</span>';
-          const gPhone = columns[2] || '<span class="text-muted">—</span>';
+          const gType = columns[1] || 'Single';
+          const gPhone = columns[2] || '—';
 
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td class="text-muted fw-medium">${rowCount}</td>
-            <td class="fw-semibold text-dark">${gName}</td>
-            <td><span class="badge bg-light text-dark border">${gType}</span></td>
+            <td class="text-muted fw-medium fs-8">${rowCount}</td>
+            <td class="fw-bold text-dark">${gName}</td>
+            <td><span class="badge rounded-pill bg-light text-dark border px-2.5 py-1">${gType}</span></td>
             <td class="text-secondary font-monospace">${gPhone}</td>
           `;
           tableBody.appendChild(tr);
@@ -185,7 +340,7 @@
         if (rowCount >= 50) {
           const warningTr = document.createElement('tr');
           warningTr.className = 'table-warning text-center';
-          warningTr.innerHTML = `<td colspan="4" class="small text-muted py-2">Preview capped at first 50 rows. Remaining records will process normally upon submission.</td>`;
+          warningTr.innerHTML = `<td colspan="4" class="small text-muted py-2">Preview capped at first 50 rows. Remaining records process cleanly upon import.</td>`;
           tableBody.appendChild(warningTr);
           break;
         }
@@ -194,16 +349,35 @@
       if (rowCount > 0) {
         placeholder.style.display = 'none';
         container.style.display = 'block';
-        statusText.innerText = `Staged ${rowCount} rows for ingestion pipeline preview`;
-        previewIcon.className = "bx bx-check-double-circle fs-3 text-success";
+        statusText.innerText = `Successfully parsed data stream`;
+        previewBadge.className = "badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-1.5 fw-bold";
+        previewBadge.innerText = `${rowCount} Records Staged`;
       } else {
         placeholder.style.display = 'flex';
         container.style.display = 'none';
-        statusText.innerText = 'Unable to parse valid records';
-        previewIcon.className = "bx bx-error-circle fs-3 text-danger";
+        statusText.innerText = 'Unable to extract valid records';
+        previewBadge.className = "badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-3 py-1.5 fw-bold";
+        previewBadge.innerText = `0 Records`;
       }
     };
 
     reader.readAsText(file);
-  });
+  }
+
+  // Generate Sample CSV File Engine
+  function downloadSampleCSV() {
+    const csvContent = "name,type,phone\nJohn Doe,Single,712345678\nJane Smith,Double,787654321\nOmari Hamisi,Single,654321098";
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "guest_import_template.csv");
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 </script>

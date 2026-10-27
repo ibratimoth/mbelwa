@@ -74,8 +74,16 @@ router.get('/events/:eventId',  decryptRouteIds, verifyEventOwnership, async (re
       smsStats[status] = count;
     });
 
+    const user = {
+      name: req.session.user.name || 'User',
+      email: req.session.user.email || 'unknown'
+    }
+
+    console.log('user info',user)
+
     res.render('events/dashboard', {
       event,
+      user,
       stats: {
         totalGuests,
         scannedGuests,

@@ -1,373 +1,467 @@
 <% layout('layouts/main', { event: event }) -%>
+<%
+  const total   = stats.totalGuests || 0;
+  const scanned = stats.scannedGuests || 0;
+  const doubles = stats.doubleGuests || 0;
+  const pending = Math.max(total - scanned, 0);
+  const pct     = total > 0 ? Math.round((scanned / total) * 100) : 0;
+  const CIRC    = 2 * Math.PI * 54;
+  const sms = {
+    sent: smsStats.sent || 0, delivered: smsStats.delivered || 0,
+    pending: smsStats.pending || 0, failed: smsStats.failed || 0
+  };
+  const smsBase = Math.max(sms.delivered + sms.pending + sms.failed, 1);
+  const w = n => ((n / smsBase) * 100).toFixed(1);
+%>
 
-  <div class="row g-4">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+  .dx {
+    --teal: #0e697b; --teal-deep: #073a4a; --teal-soft: rgba(14,105,123,.08);
+    --gold: #e5a000; --gold-hover: #c48c17; --gold-soft: rgba(229,160,0,.14);
+    --ink: #0f2530; --muted: #5d7079; --line: rgba(15,37,48,.1);
+    --paper: #ffffff; --wash: #f4f7f8;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    color: var(--ink);
+  }
+  .dx .serif { font-family: 'Fraunces', Georgia, serif; font-weight: 600; letter-spacing: -.01em; }
+  .dx .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
+  .dx .panel-head { padding: 1.1rem 1.4rem .2rem; }
+  .dx .panel-head h2 { font-size: 1.05rem; font-weight: 700; margin: 0; }
+  .dx .panel-head p { color: var(--muted); font-size: .85rem; margin: .15rem 0 0; }
+  .dx .panel-body { padding: 1rem 1.4rem 1.4rem; }
+
+  /* Hero: the memorable element is the live attendance ring */
+  .dx-hero {
+    background: linear-gradient(120deg, var(--teal-deep) 0%, var(--teal) 100%);
+    color: #fff; border-radius: 22px; padding: 2rem 2.25rem;
+    display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: center;
+    position: relative; overflow: hidden;
+  }
+  .dx-hero::before {
+    content: ''; position: absolute; inset: auto -80px -120px auto; width: 340px; height: 340px;
+    border-radius: 50%; border: 1px solid rgba(229,160,0,.35); box-shadow: 0 0 0 36px rgba(229,160,0,.05), 0 0 0 76px rgba(229,160,0,.03);
+    pointer-events: none;
+  }
+  .dx-hero h1 { font-size: clamp(1.7rem, 3.4vw, 2.5rem); line-height: 1.1; margin: .6rem 0 .35rem; color: #fff; }
+  .dx-couple { font-size: 1.15rem; color: rgba(255,255,255,.82); }
+  .dx-couple i { color: var(--gold); margin: 0 .35rem; }
+  .dx-live { display: inline-flex; align-items: center; gap: .5rem; font-size: .8rem; font-weight: 600; color: rgba(255,255,255,.85); }
+  .dx-live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; box-shadow: 0 0 0 0 rgba(61,220,151,.6); animation: pulse 2s infinite; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 9px rgba(61,220,151,0); } 100% { box-shadow: 0 0 0 0 rgba(61,220,151,0); } }
+  .dx-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-top: 1.1rem; font-size: .9rem; color: rgba(255,255,255,.85); }
+  .dx-meta i { color: var(--gold); margin-right: .3rem; font-size: 1.1rem; vertical-align: -2px; }
+
+  .ring { position: relative; width: 168px; height: 168px; z-index: 1; }
+  .ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+  .ring .track { stroke: rgba(255,255,255,.15); }
+  .ring .arc { stroke: url(#ringGrad); stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+  .ring-label { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .ring-label b { font-size: 2.4rem; line-height: 1; font-weight: 700; }
+  .ring-label span { font-size: .78rem; color: rgba(255,255,255,.7); margin-top: .25rem; }
+
+  /* Count strip: plain figures separated by rules, not four boxes */
+  .dx-counts { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 1.25rem; }
+  .dx-counts > div { padding: .25rem 1.25rem; border-left: 1px solid var(--line); }
+  .dx-counts > div:first-child { border-left: 0; padding-left: .25rem; }
+  .dx-counts b { display: block; font-size: 1.9rem; font-weight: 700; line-height: 1.1; }
+  .dx-counts span { font-size: .82rem; color: var(--muted); }
+  .dx-counts .ok b { color: #198754; } .dx-counts .warn b { color: #d6336c; } .dx-counts .zero b { color: var(--muted); }
+
+  /* Action rows */
+  .dx-act { display: flex; align-items: center; gap: 1rem; padding: .9rem 1.4rem; color: inherit; text-decoration: none; background: none; border: 0; width: 100%; text-align: left; border-top: 1px solid var(--line); transition: background .15s; }
+  .dx-act:first-child { border-top: 0; }
+  .dx-act:hover { background: var(--teal-soft); color: inherit; }
+  .dx-act:focus-visible, .dx button:focus-visible, .dx input:focus-visible, .dx a:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .dx-act .ic { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-size: 1.3rem; background: var(--teal-soft); color: var(--teal); flex: none; }
+  .dx-act .ic.gold { background: var(--gold-soft); color: #9a6a00; }
+  .dx-act .ic.solid { background: var(--teal); color: #fff; }
+  .dx-act strong { display: block; font-size: .95rem; }
+  .dx-act small { color: var(--muted); }
+  .dx-act .go { margin-left: auto; color: var(--muted); font-size: 1.3rem; }
+
+  /* Channel switch */
+  .seg { display: inline-flex; background: var(--wash); border-radius: 10px; padding: 4px; gap: 4px; margin-bottom: 1rem; }
+  .seg button { border: 0; background: transparent; padding: .5rem 1rem; border-radius: 7px; font-weight: 600; font-size: .88rem; color: var(--muted); display: inline-flex; align-items: center; gap: .4rem; }
+  .seg button[aria-selected="true"] { background: #fff; color: var(--teal); box-shadow: 0 1px 4px rgba(15,37,48,.12); }
+
+  .dx .btn-teal, .dx .btn-gold { border: 0; border-radius: 10px; font-weight: 600; padding: .7rem 1.2rem; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; transition: background .15s; }
+  .dx .btn-teal { background: var(--teal); color: #fff; } .dx .btn-teal:hover { background: var(--teal-deep); color: #fff; }
+  .dx .btn-gold { background: var(--gold); color: #1d1500; } .dx .btn-gold:hover { background: var(--gold-hover); color: #1d1500; }
+  .dx .btn-teal:disabled, .dx .btn-gold:disabled { opacity: .7; cursor: progress; }
+  .dx .btn-wa { background: #1fa855; color: #fff; border: 0; border-radius: 10px; font-weight: 600; padding: .7rem 1.2rem; display: inline-flex; gap: .5rem; align-items: center; }
+  .dx .btn-wa:hover { background: #178a45; color: #fff; }
+
+  /* Delivery bar */
+  .dbar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--wash); }
+  .dbar i { display: block; transition: width .6s; }
+  .dleg { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; margin-top: .75rem; font-size: .84rem; color: var(--muted); }
+  .dleg b { color: var(--ink); margin-right: .25rem; }
+  .dleg span::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: .4rem; background: var(--c); }
+
+  /* Invitation preview */
+  .dx-preview { position: sticky; top: 100px; }
+  .dx-card-frame { background: var(--wash); border-radius: 12px; padding: 1.1rem; text-align: center; }
+  .dx-card-frame img { max-height: 380px; max-width: 100%; border-radius: 6px; box-shadow: 0 14px 30px rgba(7,58,74,.22); }
+  .dx-empty { padding: 2rem 1.4rem; text-align: center; color: var(--muted); }
+  .dx-empty i { font-size: 2.4rem; color: var(--gold); }
+
+  /* Dialog + toast */
+  .dx-dialog { border: 0; border-radius: 16px; padding: 1.6rem; width: min(440px, 92vw); box-shadow: 0 30px 70px rgba(7,58,74,.3); color: var(--ink); }
+  .dx-dialog::backdrop { background: rgba(7,58,74,.55); backdrop-filter: blur(3px); }
+  .dx-dialog h3 { font-size: 1.15rem; margin: 0 0 .4rem; }
+  .dx-dialog p { color: var(--muted); font-size: .92rem; }
+  .dx-dialog .row-btn { display: flex; gap: .6rem; justify-content: flex-end; margin-top: 1.2rem; }
+  .dx .btn-quiet { background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: .7rem 1.1rem; font-weight: 600; color: var(--ink); }
+  .dx-toasts { position: fixed; right: 1.25rem; bottom: 1.25rem; display: grid; gap: .6rem; z-index: 2000; }
+  .dx-toast { background: var(--teal-deep); color: #fff; padding: .8rem 1.1rem; border-radius: 12px; font-size: .9rem; display: flex; gap: .6rem; align-items: center; box-shadow: 0 12px 28px rgba(7,58,74,.3); max-width: 360px; animation: toastIn .25s ease; }
+  .dx-toast.err { background: #8f1d3b; } .dx-toast i { font-size: 1.2rem; color: #7be3b0; } .dx-toast.err i { color: #ffc2d1; }
+  @keyframes toastIn { from { transform: translateY(8px); opacity: 0; } }
+
+  @media (max-width: 767px) {
+    .dx-hero { grid-template-columns: 1fr; padding: 1.5rem; } .ring { width: 132px; height: 132px; }
+    .dx-counts { grid-template-columns: 1fr 1fr; row-gap: 1rem; }
+    .dx-counts > div:nth-child(3) { border-left: 0; padding-left: .25rem; }
+    .dx-preview { position: static; }
+  }
+  @media (prefers-reduced-motion: reduce) { .dx *, .dx-toast { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="dx">
+
+  <!-- HERO -->
+  <header class="dx-hero">
+    <div style="position:relative;z-index:1">
+      <span class="dx-live">Live event portal</span>
+      <h1 class="serif"><%= event.title %></h1>
+      <div class="dx-couple serif"><%= event.groom_name %><i class="bx bx-heart"></i><%= event.bride_name %></div>
+      <div class="dx-meta">
+        <span><i class="bx bx-map-pin"></i><%= event.venue %></span>
+        <% if (event.formattedDate) { %><span><i class="bx bx-calendar"></i><%= event.formattedDate %></span><% } %>
+      </div>
+    </div>
+    <div class="ring" role="img" aria-label="<%= pct %> percent of guests checked in">
+      <svg viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#7be3b0"/><stop offset="1" stop-color="#e5a000"/>
+          </linearGradient>
+        </defs>
+        <circle class="track" cx="60" cy="60" r="54" fill="none" stroke-width="9"/>
+        <circle class="arc" cx="60" cy="60" r="54" fill="none" stroke-width="9"
+                stroke-dasharray="<%= CIRC.toFixed(1) %>" stroke-dashoffset="<%= (CIRC * (1 - pct / 100)).toFixed(1) %>"/>
+      </svg>
+      <div class="ring-label"><b><%= pct %>%</b><span>checked in</span></div>
+    </div>
+  </header>
+
+  <!-- COUNTS -->
+  <section class="dx-counts" aria-label="Guest counts">
+    <div><b><%= total %></b><span>Invited guests</span></div>
+    <div class="ok"><b><%= scanned %></b><span>Checked in</span></div>
+    <div><b><%= pending %></b><span>Still expected</span></div>
+    <div class="<%= doubles > 0 ? 'warn' : 'zero' %>"><b><%= doubles %></b><span>Duplicate scans</span></div>
+  </section>
+
+  <div class="row g-4 mt-1">
+
+    <!-- MAIN -->
     <div class="col-lg-7 col-xl-8">
 
-      <div class="card border-0 bg-white p-4 shadow-sm mb-4"
-        style="border-left: 4px solid var(--delle-teal) !important;">
-        <div class="d-flex align-items-center gap-3 mb-2">
-          <i class="bx bx-star fs-3 text-warning"></i>
-          <h3 class="mb-0 fw-bold text-dark">
-            <%= event.title %>
-          </h3>
+      <!-- Actions -->
+      <section class="panel mb-4 overflow-hidden">
+        <a class="dx-act" href="/events/<%= event.id %>/guests">
+          <span class="ic"><i class="bx bx-group"></i></span>
+          <span><strong>Guest list</strong><small>View, edit and search guests</small></span>
+          <i class="bx bx-chevron-right go"></i>
+        </a>
+        <a class="dx-act" href="/events/<%= event.id %>/guests/upload">
+          <span class="ic gold"><i class="bx bx-cloud-upload"></i></span>
+          <span><strong>Import guests</strong><small>Add many guests at once from a CSV file</small></span>
+          <i class="bx bx-chevron-right go"></i>
+        </a>
+        <a class="dx-act" href="/events/<%= event.id %>/scan">
+          <span class="ic solid"><i class="bx bx-qr-scan"></i></span>
+          <span><strong>Open scanner</strong><small>Check guests in at the entrance</small></span>
+          <i class="bx bx-chevron-right go"></i>
+        </a>
+        <button type="button" class="dx-act" id="generateScannerBtn">
+          <span class="ic"><i class="bx bx-link-alt"></i></span>
+          <span><strong>Get scanner link</strong><small>Create a link your ushers can open on their phones</small></span>
+          <i class="bx bx-chevron-right go"></i>
+        </button>
+      </section>
+
+      <!-- Send invitations -->
+      <section class="panel mb-4">
+        <div class="panel-head">
+          <h2>Send invitations</h2>
+          <p>Every guest receives a personal invitation with their own entry code.</p>
         </div>
+        <div class="panel-body">
+          <div class="seg" role="tablist">
+            <button type="button" role="tab" aria-selected="true" data-pane="paneSms"><i class="bx bx-message-square-dots"></i> SMS</button>
+            <button type="button" role="tab" aria-selected="false" data-pane="paneWa"><i class="bxl-whatsapp"></i> WhatsApp</button>
+          </div>
 
-        <p class="fs-5 text-muted mb-3 fw-medium">
-          <%= event.groom_name %> <i class="bx bx-heart text-danger fs-6 mx-1"></i>
-            <%= event.bride_name %>
-        </p>
+          <div id="paneSms">
+            <form id="bulkInviteForm" action="/events/<%= event.id %>/send-invite" method="POST">
+              <input type="hidden" name="eventTitle" value="<%= event.title %>">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" id="bulkInviteBtn" class="btn-teal">
+                <span id="bulkInviteText"><i class="bx bx-send"></i> Send SMS to all guests</span>
+                <span id="bulkInviteSpinner" class="spinner-border spinner-border-sm d-none"></span>
+              </button>
+            </form>
+          </div>
 
-        <div class="d-flex flex-wrap gap-3 text-secondary small">
-          <span class="d-inline-flex align-items-center gap-1">
-            <i class="bx bx-map fs-5 text-muted"></i>
-            <%= event.venue %>
-          </span>
-        </div>
-      </div>
+          <div id="paneWa" hidden>
+            <form id="bulkWhatsAppForm" action="/events/<%= event.id %>/send-invite-whatsapp" method="POST">
+              <input type="hidden" name="eventTitle" value="<%= event.title %>">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" id="bulkWhatsAppBtn" class="btn-wa">
+                <span id="bulkWhatsAppText"><i class="bxl-whatsapp"></i> Send WhatsApp to all guests</span>
+                <span id="bulkWhatsAppSpinner" class="spinner-border spinner-border-sm d-none"></span>
+              </button>
+            </form>
+          </div>
 
-      <div class="row g-3 mb-3">
-        <div class="col-sm-4">
-          <div class="card border-0 bg-white p-3 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Total Guests</span>
-                <h2 class="fw-bold mt-2 mb-0 text-dark">
-                  <%= stats.totalGuests %>
-                </h2>
-              </div>
-              <div class="p-2 bg-light text-secondary rounded-3"><i class="bx bx-group fs-4"></i></div>
-            </div>
+          <hr class="my-4" style="border-color:var(--line);opacity:1">
+
+          <div class="d-flex justify-content-between align-items-baseline mb-2">
+            <strong style="font-size:.95rem">Delivery</strong>
+            <span class="text-muted" style="font-size:.84rem"><%= sms.sent %> sent</span>
+          </div>
+          <div class="dbar" role="img" aria-label="Delivered <%= sms.delivered %>, pending <%= sms.pending %>, failed <%= sms.failed %>">
+            <i style="width:<%= w(sms.delivered) %>%;background:#198754"></i>
+            <i style="width:<%= w(sms.pending) %>%;background:var(--gold)"></i>
+            <i style="width:<%= w(sms.failed) %>%;background:#d6336c"></i>
+          </div>
+          <div class="dleg">
+            <span style="--c:#198754"><b><%= sms.delivered %></b>Delivered</span>
+            <span style="--c:var(--gold)"><b><%= sms.pending %></b>Pending</span>
+            <span style="--c:#d6336c"><b><%= sms.failed %></b>Failed</span>
           </div>
         </div>
+      </section>
 
-        <div class="col-sm-4">
-          <div class="card border-0 bg-white p-3 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Scanned In</span>
-                <h2 class="fw-bold mt-2 mb-0 text-success">
-                  <%= stats.scannedGuests %>
-                </h2>
-              </div>
-              <div class="p-2 bg-light text-success rounded-3"><i class="bx bx-check-circle fs-4"></i></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-sm-4">
-          <div class="card border-0 bg-white p-3 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Double Entries</span>
-                <h2 class="fw-bold mt-2 mb-0 <%= stats.doubleGuests > 0 ? 'text-danger' : 'text-muted' %>">
-                  <%= stats.doubleGuests %>
-                </h2>
-              </div>
-              <div class="p-2 bg-light text-danger rounded-3"><i class="bx bx-error-circle fs-4"></i></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="row g-3 mb-4">
-        <div class="col-sm-3">
-          <div class="card border-0 bg-white p-3 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">SMS Sent</span>
-                <h2 class="fw-bold mt-2 mb-0 text-primary">
-                  <%= smsStats.sent %>
-                </h2>
-              </div>
-              <div class="p-2 bg-light text-primary rounded-3"><i class="bx bx-message-dots fs-4"></i></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-sm-3">
-          <div class="card border-0 bg-white p-3 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Delivered</span>
-                <h2 class="fw-bold mt-2 mb-0 text-success">
-                  <%= smsStats.delivered || 0 %>
-                </h2>
-              </div>
-              <div class="p-2 bg-light text-success rounded-3"><i class="bx bx-cloud-upload fs-4"></i></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-sm-3">
-          <div class="card border-0 bg-white p-3 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Pending</span>
-                <h2 class="fw-bold mt-2 mb-0 text-warning">
-                  <%= smsStats.pending || 0 %>
-                </h2>
-              </div>
-              <div class="p-2 bg-light text-warning rounded-3"><i class="bx bx-time-five fs-4"></i></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-sm-3">
-          <div class="card border-0 bg-white p-3 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="text-uppercase text-muted fs-7 fw-bold tracking-wider">Failed</span>
-                <h2 class="fw-bold mt-2 mb-0 text-danger">
-                  <%= smsStats.failed || 0 %>
-                </h2>
-              </div>
-              <div class="p-2 bg-light text-danger rounded-3"><i class="bx bx-comment-x fs-4"></i></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card border-0 bg-white p-4 shadow-sm mb-4">
-        <h5 class="fw-bold text-dark mb-3"><i class="bx bx-cog me-2 text-secondary"></i>System Operations</h5>
-
-        <div class="d-flex flex-wrap gap-2 mb-2">
-          <a href="/events/<%= event.id %>/guests"
-            class="btn btn-delle-teal btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-            <i class="bx bx-user-pin fs-5"></i> Manage Guests
-          </a>
-
-          <a href="/events/<%= event.id %>/guests/upload"
-            class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-            <i class="bx bx-file-blank fs-5"></i> Upload CSV
-          </a>
-
-          <a href="/events/<%= event.id %>/scan"
-            class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-            <i class="bx bx-qr-scan fs-5"></i> Scan QR Code
-          </a>
-
-          <button id="generateScannerBtn"
-            class="btn btn-delle-gold btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-            <i class="bx bx-link-external fs-5"></i> Generate Link
-          </button>
-
-          <form id="bulkInviteForm" action="/events/<%= event.id %>/send-invite" method="POST" class="d-inline-block">
-            <input type="hidden" name="eventTitle" value="<%= event.title %>">
-            <button type="submit" id="bulkInviteBtn"
-              class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-              <span id="bulkInviteText"><i class="bx bx-paper-plane fs-5"></i> Send Bulk Invites</span>
-              <span id="bulkInviteSpinner" class="spinner-border spinner-border-sm d-none"></span>
-            </button>
-          </form>
-
-          <form id="bulkWhatsAppForm" action="/events/<%= event.id %>/send-invite-whatsapp" method="POST"
-            class="d-inline-block">
-            <input type="hidden" name="eventTitle" value="<%= event.title %>">
-            <button type="submit" id="bulkWhatsAppBtn"
-              class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 px-3 py-2 fw-medium">
-              <span id="bulkWhatsAppText"><i class="bxl-whatsapp fs-5"></i> Send WhatsApp Invites</span>
-              <span id="bulkWhatsAppSpinner" class="spinner-border spinner-border-sm d-none"></span>
-            </button>
-          </form>
-          <div id="bulkWhatsAppStatus"></div>
-        </div>
-
-        <div id="bulkInviteStatus" class="small fw-medium mt-1"></div>
-      </div>
-
+      <!-- Gate team -->
       <% if (event.scanner_token) { %>
-        <div class="card border-0 bg-white p-4 shadow-sm mb-4">
-          <h5 class="fw-bold text-dark mb-1"><i class="bx bx-message-square-dots me-2 text-secondary"></i>Send Scanner
-            Link</h5>
-          <p class="text-muted small mb-3">Provide system access links to operators via SMS verification.</p>
-
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-secondary">Recipient Phone Numbers</label>
-            <div class="input-group">
-              <span class="input-group-text bg-light text-muted"><i class="bx bx-phone"></i></span>
-              <input type="text" id="phoneInput" class="form-control" placeholder="071XXXXXXXX, 255XXXXXXXX" />
-            </div>
-            <div class="form-text text-muted small">Separate target phone records cleanly using commas.</div>
+        <section class="panel mb-4">
+          <div class="panel-head">
+            <h2>Invite your gate team</h2>
+            <p>Text the scanner link to ushers or security so they can start checking guests in.</p>
           </div>
-
-          <button id="sendBtn"
-            class="btn btn-delle-teal btn-sm px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2"
-            onclick="sendBulkScannerLink()">
-            <span id="btnText">Send Access Link</span>
-            <span id="spinner" class="spinner-border spinner-border-sm d-none"></span>
-          </button>
-
-          <div id="smsStatus" class="mt-2 small fw-medium"></div>
-        </div>
-        <% } %>
-
+          <div class="panel-body">
+            <label for="phoneInput" class="form-label small fw-semibold">Phone numbers</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i class="bx bx-phone"></i></span>
+              <input type="text" id="phoneInput" class="form-control" placeholder="0712 345 678, 255754 000 111" autocomplete="off">
+              <button id="sendBtn" type="button" class="btn-gold" style="border-radius:0 10px 10px 0" onclick="sendBulkScannerLink()">
+                <span id="btnText">Send link</span>
+                <span id="spinner" class="spinner-border spinner-border-sm d-none"></span>
+              </button>
+            </div>
+            <div class="form-text">Separate several numbers with commas.</div>
+            <div id="smsStatus" class="mt-2 small fw-medium" aria-live="polite"></div>
+          </div>
+        </section>
+      <% } %>
     </div>
 
-    <div class="col-lg-5 col-xl-4">
-      <% if(event.card_template){ %>
-        <div class="card border-0 bg-white shadow-sm overflow-hidden sticky-top" style="top: 105px; z-index: 10;">
-          <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
-            <h5 class="fw-bold text-dark mb-0"><i class="bx bx-image me-2 text-secondary"></i>Template Asset</h5>
-          </div>
-
-          <div class="card-body px-4 text-center">
-            <div class="bg-light p-2 rounded-3 border mb-3">
-              <img src="/public/templates/<%= event.card_template %>" class="img-fluid rounded"
-                style="max-height: 320px; object-fit: contain;" alt="Card Template Background Canvas">
+    <!-- SIDE: invitation preview -->
+    <aside class="col-lg-5 col-xl-4">
+      <div class="panel dx-preview overflow-hidden">
+        <div class="panel-head">
+          <h2>Invitation design</h2>
+          <p>This is what guests see when they open their invitation.</p>
+        </div>
+        <% if (event.card_template) { %>
+          <div class="panel-body">
+            <div class="dx-card-frame">
+              <img src="/public/templates/<%= event.card_template %>" alt="Invitation card template">
             </div>
-
-            <a href="/events/<%= event.id %>/editor"
-              class="btn btn-delle-gold btn-sm w-100 py-2 d-inline-flex align-items-center justify-content-center gap-2 fw-medium shadow-sm mb-2">
-              <i class="bx bx-edit"></i> Edit Card Layout Template
+            <a href="/events/<%= event.id %>/editor" class="btn-gold w-100 mt-3 text-decoration-none">
+              <i class="bx bx-slider"></i> Edit name and QR placement
             </a>
           </div>
-        </div>
+        <% } else { %>
+          <div class="dx-empty">
+            <i class="bx bx-image-add"></i>
+            <p class="mt-2 mb-3">No invitation card yet. Add a design so guests get a card with their entry code.</p>
+            <a href="/events/<%= event.id %>/editor" class="btn-gold text-decoration-none">Add invitation card</a>
+          </div>
         <% } %>
-    </div>
+      </div>
+    </aside>
   </div>
 
-  <script>
-    const eventId = "<%= event.id %>";
+  <!-- Shared dialog and toasts -->
+  <dialog id="dxDialog" class="dx-dialog">
+    <h3 id="dxDialogTitle" class="serif"></h3>
+    <div id="dxDialogBody"></div>
+    <div class="row-btn" id="dxDialogActions"></div>
+  </dialog>
+  <div class="dx-toasts" id="dxToasts" aria-live="polite"></div>
+</div>
 
-    // Share link generator trigger hook
-    document.getElementById('generateScannerBtn').addEventListener('click', async () => {
-      const res = await fetch('/events/<%= event.id %>/generate-scanner-link', {
-        method: 'POST'
+<script>
+  const eventId = "<%= event.id %>";
+  const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
+
+  /* ---------- UI helpers ---------- */
+  const dlg = document.getElementById('dxDialog');
+
+  function showDialog({ title, bodyHtml, actions }) {
+    document.getElementById('dxDialogTitle').textContent = title;
+    document.getElementById('dxDialogBody').innerHTML = bodyHtml;
+    const bar = document.getElementById('dxDialogActions');
+    bar.innerHTML = '';
+    actions.forEach(a => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = a.cls;
+      b.textContent = a.label;
+      b.onclick = () => { dlg.close(); a.onClick && a.onClick(); };
+      bar.appendChild(b);
+    });
+    dlg.showModal();
+  }
+
+  function confirmDialog(title, message, confirmLabel) {
+    return new Promise(resolve => {
+      showDialog({
+        title, bodyHtml: '<p></p>',
+        actions: [
+          { label: 'Cancel', cls: 'btn-quiet', onClick: () => resolve(false) },
+          { label: confirmLabel, cls: 'btn-teal', onClick: () => resolve(true) }
+        ]
       });
+      document.querySelector('#dxDialogBody p').textContent = message;
+      dlg.addEventListener('cancel', () => resolve(false), { once: true });
+    });
+  }
 
+  function toast(message, ok = true) {
+    const t = document.createElement('div');
+    t.className = 'dx-toast' + (ok ? '' : ' err');
+    t.innerHTML = `<i class="bx ${ok ? 'bx-check-circle' : 'bx-error-circle'}"></i><span></span>`;
+    t.querySelector('span').textContent = message;
+    document.getElementById('dxToasts').appendChild(t);
+    setTimeout(() => t.remove(), 5000);
+  }
+
+  /* ---------- Channel switch ---------- */
+  document.querySelectorAll('.seg button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-selected', b === btn));
+      ['paneSms', 'paneWa'].forEach(id => document.getElementById(id).hidden = (id !== btn.dataset.pane));
+    });
+  });
+
+  /* ---------- Scanner link ---------- */
+  document.getElementById('generateScannerBtn').addEventListener('click', async () => {
+    try {
+      const res = await fetch(`/events/${eventId}/generate-scanner-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() }
+      });
       const data = await res.json();
-      if (data.success) {
-        prompt('Active Scanner Entry Link (Copy to share):', data.scanLink);
-      }
-    });
+      if (!(res.ok && data.success)) return toast(data.message || 'Could not create the scanner link.', false);
 
-    // ASYNC AJAX DRIVER: Bulk Invites Ingestion Queue Dispatcher
-    document.getElementById('bulkInviteForm').addEventListener('submit', async function (e) {
-      e.preventDefault(); // Intercept browser redirect routing execution cleanly
-
-      if (!confirm('Send Bulk SMS invites to all assigned guests?')) return;
-
-      const btnText = document.getElementById("bulkInviteText");
-      const spinner = document.getElementById("bulkInviteSpinner");
-      const status = document.getElementById("bulkInviteStatus");
-      const submitBtn = document.getElementById("bulkInviteBtn");
-
-      // Freeze UI interaction states during runtime transmission pipelines
-      submitBtn.disabled = true;
-      btnText.innerHTML = "Processing Queue...";
-      spinner.classList.remove("d-none");
-      status.innerHTML = "";
-
-      try {
-        const res = await fetch(this.action, {
-          method: "POST",
-          body: new FormData(this)
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-          status.innerHTML = `<span class="text-success d-inline-block mt-2"><i class="bx bx-check-circle me-1"></i>${data.message || 'Bulk generation dispatch completed successfully.'}</span>`;
-        } else {
-          status.innerHTML = `<span class="text-danger d-inline-block mt-2"><i class="bx bx-x-circle me-1"></i>${data.message || 'Server error encountered during bulk assignment routines.'}</span>`;
-        }
-      } catch (err) {
-        console.error(err);
-        status.innerHTML = "<span class='text-danger d-inline-block mt-2'><i class='bx bx-error me-1'></i>Network failure communicating request payload to system endpoint.</span>";
-      } finally {
-        // Re-enable and restore button states
-        submitBtn.disabled = false;
-        btnText.innerHTML = '<i class="bx bx-paper-plane fs-5"></i> Send Bulk Invites';
-        spinner.classList.add("d-none");
-      }
-    });
-
-    // ASYNC AJAX DRIVER: Bulk WhatsApp Invites Ingestion Queue Dispatcher
-    document.getElementById('bulkWhatsAppForm').addEventListener('submit', async function (e) {
-      e.preventDefault(); // Intercept browser redirect routing execution cleanly
-
-      if (!confirm('Send WhatsApp invites to all assigned guests?')) return;
-
-      const btnText = document.getElementById("bulkWhatsAppText");
-      const spinner = document.getElementById("bulkWhatsAppSpinner");
-      const status = document.getElementById("bulkWhatsAppStatus");
-      const submitBtn = document.getElementById("bulkWhatsAppBtn");
-
-      // Freeze UI interaction states during runtime transmission pipelines
-      submitBtn.disabled = true;
-      btnText.innerHTML = "Processing Queue...";
-      spinner.classList.remove("d-none");
-      status.innerHTML = "";
-
-      try {
-        const res = await fetch(this.action, {
-          method: "POST",
-          headers: {
-            'Accept': 'application/json'
-          },
-          body: new FormData(this)
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-          status.innerHTML = `<span class="text-success d-inline-block mt-2"><i class="bx bx-check-circle me-1"></i>${data.message || 'WhatsApp bulk generation dispatch completed successfully.'}</span>`;
-        } else {
-          status.innerHTML = `<span class="text-danger d-inline-block mt-2"><i class="bx bx-x-circle me-1"></i>${data.message || 'Server error encountered during WhatsApp bulk assignment routines.'}</span>`;
-        }
-      } catch (err) {
-        console.error(err);
-        status.innerHTML = "<span class='text-danger d-inline-block mt-2'><i class='bx bx-error me-1'></i>Network failure communicating request payload to system endpoint.</span>";
-      } finally {
-        // Re-enable and restore button states
-        submitBtn.disabled = false;
-        btnText.innerHTML = '<i class="bxl-whatsapp fs-5"></i> Send WhatsApp Invites';
-        spinner.classList.add("d-none");
-      }
-    });
-
-    // ASYNC AJAX DRIVER: Remote Verification Operator Link Transmitter
-    async function sendBulkScannerLink() {
-      const input = document.getElementById("phoneInput");
-      const btnText = document.getElementById("btnText");
-      const spinner = document.getElementById("spinner");
-      const status = document.getElementById("smsStatus");
-
-      const numbers = input.value
-        .split(",")
-        .map(n => n.trim())
-        .filter(Boolean);
-
-      if (!numbers.length) {
-        status.innerHTML = "<span class='text-danger'><i class='bx bx-error-alt me-1'></i>Please provide at least one phone number target.</span>";
-        return;
-      }
-
-      btnText.innerText = "Dispatching...";
-      spinner.classList.remove("d-none");
-      status.innerHTML = "";
-
-      try {
-        const res = await fetch(`/events/${eventId}/send-scanner-link`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ numbers })
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-          status.innerHTML = `<span class="text-success"><i class="bx bx-check-circle me-1"></i>${data.message}</span>`;
-          input.value = "";
-        } else {
-          status.innerHTML = `<span class="text-danger"><i class="bx bx-x-circle me-1"></i>${data.message}</span>`;
-        }
-      } catch (err) {
-        console.error(err);
-        status.innerHTML = "<span class='text-danger'><i class='bx bx-error me-1'></i>Network transaction failure during SMS route delivery.</span>";
-      } finally {
-        btnText.innerText = "Send Access Link";
-        spinner.classList.add("d-none");
-      }
+      showDialog({
+        title: 'Scanner link ready',
+        bodyHtml: `<p>Share this link with the people checking guests in.</p>
+                   <input id="scanLinkField" class="form-control" readonly>`,
+        actions: [
+          { label: 'Close', cls: 'btn-quiet' },
+          { label: 'Copy link', cls: 'btn-gold', onClick: async () => {
+              try { await navigator.clipboard.writeText(data.scanLink); toast('Link copied'); }
+              catch { toast('Copy failed. Select the link and copy it manually.', false); }
+          }}
+        ]
+      });
+      const f = document.getElementById('scanLinkField');
+      f.value = data.scanLink; f.select();
+    } catch (err) {
+      console.error(err);
+      toast('Network problem. Check your connection and try again.', false);
     }
-  </script>
+  });
+
+  /* ---------- Bulk send (SMS + WhatsApp) ---------- */
+  function wireBulk({ formId, btnId, textId, spinnerId, idleHtml, confirmTitle, confirmMsg, confirmLabel, fallbackOk }) {
+    document.getElementById(formId).addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (!(await confirmDialog(confirmTitle, confirmMsg, confirmLabel))) return;
+
+      const btn = document.getElementById(btnId);
+      const text = document.getElementById(textId);
+      const spinner = document.getElementById(spinnerId);
+      btn.disabled = true; text.textContent = 'Sending…'; spinner.classList.remove('d-none');
+
+      try {
+        const payload = {};
+        new FormData(this).forEach((v, k) => payload[k] = v);
+        const res = await fetch(this.action, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        toast(data.message || (data.success ? fallbackOk : 'Something went wrong on the server.'), !!data.success);
+      } catch (err) {
+        console.error(err);
+        toast('Network problem. Check your connection and try again.', false);
+      } finally {
+        btn.disabled = false; text.innerHTML = idleHtml; spinner.classList.add('d-none');
+      }
+    });
+  }
+
+  wireBulk({
+    formId: 'bulkInviteForm', btnId: 'bulkInviteBtn', textId: 'bulkInviteText', spinnerId: 'bulkInviteSpinner',
+    idleHtml: '<i class="bx bx-send"></i> Send SMS to all guests',
+    confirmTitle: 'Send SMS invitations?', confirmMsg: 'Every guest on the list will receive an SMS invitation.',
+    confirmLabel: 'Send SMS', fallbackOk: 'SMS invitations sent.'
+  });
+  wireBulk({
+    formId: 'bulkWhatsAppForm', btnId: 'bulkWhatsAppBtn', textId: 'bulkWhatsAppText', spinnerId: 'bulkWhatsAppSpinner',
+    idleHtml: '<i class="bxl-whatsapp"></i> Send WhatsApp to all guests',
+    confirmTitle: 'Send WhatsApp invitations?', confirmMsg: 'Every guest on the list will receive a WhatsApp invitation.',
+    confirmLabel: 'Send WhatsApp', fallbackOk: 'WhatsApp invitations sent.'
+  });
+
+  /* ---------- Gate team SMS ---------- */
+  async function sendBulkScannerLink() {
+    const input = document.getElementById('phoneInput');
+    const btnText = document.getElementById('btnText');
+    const spinner = document.getElementById('spinner');
+    const status = document.getElementById('smsStatus');
+    const numbers = input.value.split(',').map(n => n.trim()).filter(Boolean);
+
+    if (!numbers.length) {
+      status.innerHTML = "<span class='text-danger'><i class='bx bx-error-alt me-1'></i>Enter at least one phone number.</span>";
+      input.focus();
+      return;
+    }
+
+    btnText.textContent = 'Sending…'; spinner.classList.remove('d-none'); status.innerHTML = '';
+    try {
+      const res = await fetch(`/events/${eventId}/send-scanner-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify({ numbers })
+      });
+      const data = await res.json();
+      toast(data.message || (data.success ? 'Scanner link sent.' : 'Could not send the link.'), !!data.success);
+      if (data.success) input.value = '';
+    } catch (err) {
+      console.error(err);
+      toast('Network problem. Check your connection and try again.', false);
+    } finally {
+      btnText.textContent = 'Send link'; spinner.classList.add('d-none');
+    }
+  }
+</script>

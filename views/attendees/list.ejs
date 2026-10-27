@@ -1,188 +1,278 @@
-<!-- 
 <% layout('layouts/main', { event: event }) -%>
 
-<h3 class="mb-3">
-  Guests
-</h3>
+<style>
+  :root {
+    --delle-teal: #0e697b;
+    --delle-teal-hover: #0a5160;
+    --delle-teal-soft: rgba(14, 105, 123, 0.08);
+    --delle-gold: #e5a000;
+    --delle-gold-soft: rgba(229, 160, 0, 0.12);
+    --delle-border: rgba(0, 0, 0, 0.06);
+  }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+  /* Header Directory Workstation Card */
+  .directory-header-card {
+    background: #ffffff;
+    border: 1px solid var(--delle-border);
+    border-radius: 18px;
+    padding: 1.5rem 2rem;
+  }
 
-  <input type="text"
-         id="searchInput"
-         class="form-control w-50"
-         placeholder="Search guests...">
+  /* Filter Capsule Navigation */
+  .search-box-group {
+    background: #f8fafc;
+    border: 1px solid var(--delle-border);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+  }
 
-  <a href="/events/<%= event.id %>/guests/upload"
-     class="btn btn-primary">
-    <i class="bx bx-upload"></i> Upload
-  </a>
+  .search-box-group:focus-within {
+    border-color: var(--delle-teal);
+    box-shadow: 0 0 0 3px var(--delle-teal-soft);
+    background: #ffffff;
+  }
 
-</div>
+  .filter-pill {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.4rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid var(--delle-border);
+    background: #ffffff;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
 
-<table class="table table-bordered table-hover align-middle">
-  <thead class="table-light">
-    <tr>
-      <th>#</th>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Phone</th>
-      <th>cardno</th>
-      <th>Scans</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
+  .filter-pill.active, .filter-pill:hover {
+    background: var(--delle-teal-soft);
+    border-color: rgba(14, 105, 123, 0.2);
+    color: var(--delle-teal);
+  }
 
-  <tbody id="attendeesTable">
-    <% guests.forEach((g, i) => { %>
-      <tr>
-        <td class="sn-col"><%= i + 1 %></td>
-        <td><%= g.name %></td>
-        <td>
-          <span class="badge bg-info text-dark">
-            <%= g.type %>
+  /* Modern Table Styling */
+  .table-container-card {
+    background: #ffffff;
+    border: 1px solid var(--delle-border);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .guest-table thead {
+    background: #f8fafc;
+  }
+
+  .guest-table th {
+    font-size: 0.725rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #64748b;
+    font-weight: 700;
+    border-bottom: 1px solid var(--delle-border);
+  }
+
+  .guest-table tbody tr {
+    transition: all 0.2s ease;
+  }
+
+  .guest-table tbody tr:hover {
+    background-color: var(--delle-teal-soft) !important;
+  }
+
+  /* Avatar Circle Icon */
+  .guest-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--delle-teal-soft);
+    color: var(--delle-teal);
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Scan Status Badges */
+  .scan-badge-zero {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+  }
+
+  .scan-badge-valid {
+    background: var(--delle-teal-soft);
+    color: var(--delle-teal);
+    border: 1px solid rgba(14, 105, 123, 0.2);
+  }
+
+  .scan-badge-alert {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    animation: pulse 2s infinite;
+  }
+
+  /* Action Icon Buttons */
+  .btn-action-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--delle-border);
+    background: #ffffff;
+    color: #475569;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .btn-action-icon:hover {
+    background: var(--delle-teal);
+    color: #ffffff;
+    border-color: var(--delle-teal);
+  }
+
+  .btn-delle-outline {
+    background-color: #ffffff;
+    color: var(--delle-teal);
+    border: 1px solid rgba(14, 105, 123, 0.25);
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .btn-delle-outline:hover {
+    background-color: var(--delle-teal-soft);
+    border-color: var(--delle-teal);
+    color: var(--delle-teal);
+  }
+</style>
+
+<!-- HEADER WORKSTATION BANNER -->
+<div class="directory-header-card shadow-sm mb-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div class="d-flex align-items-center gap-3">
+      <div class="p-3 rounded-3" style="background: var(--delle-teal-soft); color: var(--delle-teal);">
+        <i class="bx bx-group fs-3"></i>
+      </div>
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <h3 class="mb-0 fw-bold text-dark">Guest Directory</h3>
+          <span class="badge rounded-pill px-2.5 py-1 text-xs fw-semibold" style="background-color: var(--delle-teal-soft); color: var(--delle-teal);">
+            <%= guests.length %> Registered
           </span>
-        </td>
-        <td><%= g.phone || '-' %></td>
-        <td><%= g.card_number|| '-' %></td>
-        <td><%= g.scans %></td>
-
-        <td class="d-flex gap-1">
-
-          <a class="btn btn-sm btn-outline-secondary"
-             href="/events/<%= event.id %>/guests/<%= g.id %>/edit">
-            <i class="bx bx-edit"></i>
-          </a>
-
-          <a class="btn btn-sm btn-outline-success"
-             href="/events/<%= event.id %>/guests/<%= g.id %>/download">
-            <i class="bx bx-download"></i>
-          </a>
-
-        </td>
-      </tr>
-    <% }) %>
-  </tbody>
-</table>
-
-<p id="noResults" class="text-center text-muted d-none">
-  No guests found
-</p>
-
-<script>
-  const searchInput = document.getElementById('searchInput');
-  const rows = Array.from(document.querySelectorAll('#attendeesTable tr'));
-  const noResults = document.getElementById('noResults');
-
-  searchInput.addEventListener('keyup', function () {
-    const term = this.value.toLowerCase();
-
-    let visible = 0;
-
-    rows.forEach(row => {
-      const match = row.innerText.toLowerCase().includes(term);
-      row.style.display = match ? '' : 'none';
-      if (match) visible++;
-    });
-
-    noResults.classList.toggle('d-none', visible > 0);
-  });
-</script> -->
-
-<% layout('layouts/main', { event: event }) -%>
-
-<!-- PAGE HEADER -->
-<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4 pb-2 border-bottom">
-  <div class="d-flex align-items-center gap-2">
-    <i class="bx bx-group fs-3 text-secondary"></i>
-    <div>
-      <h3 class="mb-0 fw-bold text-dark">Guest Directory</h3>
-      <span class="text-muted small"><%= event.title %></span>
-    </div>
-  </div>
-
-  <a href="/events/<%= event.id %>/guests/upload" class="btn btn-delle-outline btn-sm px-3 py-2 fw-medium d-inline-flex align-items-center gap-1 shadow-sm">
-    <i class="bx bx-upload fs-5"></i> Import CSV List
-  </a>
-</div>
-
-<!-- FILTER & UTILITY BAR -->
-<div class="card border-0 bg-white shadow-sm p-3 mb-4">
-  <div class="row align-items-center g-2">
-    <div class="col-md-6 col-lg-4">
-      <div class="input-group">
-        <span class="input-group-text bg-light text-muted border-end-0"><i class="bx bx-search fs-5"></i></span>
-        <input type="text" id="searchInput" class="form-control border-start-0 bg-light" placeholder="Search by name, phone, card no...">
+        </div>
+        <p class="text-muted small mb-0"><%= event.title %></p>
       </div>
     </div>
-    <div class="col-md-6 col-lg-8 text-md-end">
-      <span class="text-muted small fw-medium">Total Registered: <strong class="text-dark"><%= guests.length %></strong></span>
+
+    <div class="d-flex align-items-center gap-2">
+      <a href="/events/<%= event.id %>/guests/upload" class="btn btn-delle-outline px-3.5 py-2 d-inline-flex align-items-center gap-2">
+        <i class="bx bx-cloud-upload fs-5"></i>
+        <span>Import CSV List</span>
+      </a>
     </div>
   </div>
 </div>
 
-<!-- GUESTS DATA CONTAINER -->
-<div class="card border-0 bg-white shadow-sm overflow-hidden mb-5">
+<!-- FILTER & CONTROL BAR -->
+<div class="card border-0 bg-white shadow-sm p-3 mb-4" style="border-radius: 16px;">
+  <div class="row align-items-center g-3">
+    
+    <!-- Search Field -->
+    <div class="col-md-5 col-lg-4">
+      <div class="search-box-group input-group">
+        <span class="input-group-text bg-transparent border-0 text-muted"><i class="bx bx-search fs-5"></i></span>
+        <input type="text" id="searchInput" class="form-control bg-transparent border-0 ps-0" placeholder="Search name, phone, card #...">
+      </div>
+    </div>
+
+    <!-- Quick Pass Type Filter Pills -->
+    <div class="col-md-7 col-lg-8 d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+      <span class="filter-pill active" onclick="filterType('ALL')">All Passes</span>
+      <span class="filter-pill" onclick="filterType('SINGLE')">Single</span>
+      <span class="filter-pill" onclick="filterType('DOUBLE')">Double / VIP</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- GUEST DIRECTORY TABLE CONTAINER -->
+<div class="table-container-card shadow-sm mb-5">
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0 small">
-      <thead class="table-light border-bottom">
+    <table class="table guest-table align-middle mb-0">
+      <thead>
         <tr>
-          <th scope="col" class="py-3 ps-4 text-secondary fw-bold" style="width: 60px;">#</th>
-          <th scope="col" class="py-3 text-secondary fw-bold">Full Name</th>
-          <th scope="col" class="py-3 text-secondary fw-bold" style="width: 120px;">Pass Type</th>
-          <th scope="col" class="py-3 text-secondary fw-bold">Phone Number</th>
-          <th scope="col" class="py-3 text-secondary fw-bold">Card Number</th>
-          <th scope="col" class="py-3 text-secondary fw-bold text-center" style="width: 100px;">Scans</th>
-          <th scope="col" class="py-3 text-secondary fw-bold text-end pe-4" style="width: 120px;">Actions</th>
+          <th class="py-3.5 ps-4" style="width: 65px;">#</th>
+          <th class="py-3.5">Guest Info</th>
+          <th class="py-3.5" style="width: 140px;">Pass Type</th>
+          <th class="py-3.5">Phone Number</th>
+          <th class="py-3.5">Card Number</th>
+          <th class="py-3.5 text-center" style="width: 110px;">Check-ins</th>
+          <th class="py-3.5 text-end pe-4" style="width: 120px;">Actions</th>
         </tr>
       </thead>
 
-      <tbody id="attendeesTable" class="border-0">
+      <tbody id="attendeesTable">
         <% guests.forEach((g, i) => { %>
-          <tr class="align-middle">
-            <!-- Serial Number -->
-            <td class="sn-col py-3 ps-4 text-muted fw-medium"><%= i + 1 %></td>
+          <tr class="align-middle guest-row" data-pass-type="<%= (g.type || '').toUpperCase() %>">
             
-            <!-- Name -->
-            <td class="fw-bold text-dark"><%= g.name %></td>
+            <!-- Serial # -->
+            <td class="sn-col py-3 ps-4 text-muted fw-medium fs-7"><%= i + 1 %></td>
             
-            <!-- Type Badge -->
-            <td>
-              <span class="badge rounded-pill px-2.5 py-1.5 font-medium bg-light text-dark border">
+            <!-- Guest Profile Info (Avatar + Name) -->
+            <td class="py-3">
+              <div class="d-flex align-items-center gap-2.5">
+                <div class="guest-avatar">
+                  <%= g.name ? g.name.charAt(0).toUpperCase() : 'G' %>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark fs-6 mb-0"><%= g.name %></div>
+                </div>
+              </div>
+            </td>
+            
+            <!-- Pass Type Tag -->
+            <td class="py-3">
+              <span class="badge rounded-pill px-2.5 py-1.5 fw-semibold bg-light text-secondary border">
                 <%= g.type %>
               </span>
             </td>
             
-            <!-- Phone -->
-            <td class="text-secondary font-monospace"><%= g.phone || '—' %></td>
+            <!-- Phone Number -->
+            <td class="py-3 font-monospace text-secondary fs-7"><%= g.phone || '—' %></td>
             
             <!-- Card Number -->
-            <td class="text-secondary font-monospace fw-medium"><%= g.card_number || '—' %></td>
+            <td class="py-3 font-monospace fw-semibold text-dark fs-7"><%= g.card_number || '—' %></td>
             
-            <!-- Scan Status Counter with Contextual Alerts -->
-            <td class="text-center">
+            <!-- Contextual Scan Counter Badge -->
+            <td class="py-3 text-center">
               <% if (g.scans === 0) { %>
-                <span class="badge bg-light text-muted px-2 py-1 border"><%= g.scans %></span>
+                <span class="badge rounded-pill px-2.5 py-1.5 scan-badge-zero fs-8 fw-bold"><%= g.scans %></span>
               <% } else if (g.scans === 1) { %>
-                <span class="badge px-2 py-1 text-white shadow-xs" style="background-color: var(--delle-teal);"><%= g.scans %></span>
+                <span class="badge rounded-pill px-2.5 py-1.5 scan-badge-valid fs-8 fw-bold"><%= g.scans %> Pass</span>
               <% } else { %>
-                <span class="badge bg-danger text-white px-2 py-1 animate-pulse shadow-sm" title="Warning: Duplicate entry check triggered"><i class="bx bx-error-circle me-0.5 align-middle"></i><%= g.scans %></span>
+                <span class="badge rounded-pill px-2.5 py-1.5 scan-badge-alert fs-8 fw-bold" title="Warning: Duplicate entry detected!">
+                  <i class="bx bx-error-circle me-1 align-middle"></i><%= g.scans %>
+                </span>
               <% } %>
             </td>
 
-            <!-- Action Controls Buttons Row -->
-            <td class="text-end pe-4">
-              <div class="d-inline-flex gap-1">
-                <a class="btn btn-sm btn-light border text-secondary p-2 d-inline-flex align-items-center justify-content-center rounded-2" 
-                   href="/events/<%= event.id %>/guests/<%= g.id %>/edit" title="Edit Record">
+            <!-- Action Controls -->
+            <td class="py-3 text-end pe-4">
+              <div class="d-inline-flex gap-1.5">
+                <a href="/events/<%= event.id %>/guests/<%= g.id %>/edit" class="btn-action-icon" title="Edit Guest Details">
                   <i class="bx bx-edit fs-6"></i>
                 </a>
 
-                <a class="btn btn-sm btn-light border text-success p-2 d-inline-flex align-items-center justify-content-center rounded-2" 
-                   href="/events/<%= event.id %>/guests/<%= g.id %>/download" title="Download Generated Invitation Asset">
+                <a href="/events/<%= event.id %>/guests/<%= g.id %>/download" class="btn-action-icon" style="color: #16a34a;" title="Download Digital Pass Graphic">
                   <i class="bx bx-download fs-6"></i>
                 </a>
               </div>
             </td>
+
           </tr>
         <% }) %>
       </tbody>
@@ -191,32 +281,59 @@
 
   <!-- Empty Search Results Placeholder -->
   <div id="noResults" class="text-center py-5 bg-white d-none border-top">
-    <i class="bx bx-user-x text-muted mb-2" style="font-size: 3rem;"></i>
-    <p class="text-secondary mb-0">No guest records match your active search filter parameters.</p>
+    <div class="p-3 rounded-circle d-inline-flex mb-2" style="background: var(--delle-teal-soft); color: var(--delle-teal);">
+      <i class="bx bx-user-x fs-1"></i>
+    </div>
+    <h6 class="fw-bold text-dark mb-1">No Guest Records Found</h6>
+    <p class="text-muted small mb-0">No attendee records match your active search or type filter parameters.</p>
   </div>
 </div>
 
-<!-- CLIENT REFINED LOOKUP SCRIPTS MATRIX -->
+<!-- CLIENT SEARCH & PASS FILTER SCRIPT -->
 <script>
-  document.getElementById('searchInput').addEventListener('keyup', function () {
-    const term = this.value.toLowerCase();
-    const tableBody = document.getElementById('attendeesTable');
-    const rows = Array.from(tableBody.querySelectorAll('tr'));
+  let activeTypeFilter = 'ALL';
+
+  // Live Text Search Input Driver
+  document.getElementById('searchInput').addEventListener('keyup', filterRows);
+
+  // Quick Pass Type Pill Filter
+  function filterType(type) {
+    activeTypeFilter = type;
+    
+    // Toggle active pill UI styling
+    document.querySelectorAll('.filter-pill').forEach(pill => {
+      if (pill.innerText.toUpperCase().includes(type) || (type === 'ALL' && pill.innerText.includes('All'))) {
+        pill.classList.add('active');
+      } else {
+        pill.classList.remove('active');
+      }
+    });
+
+    filterRows();
+  }
+
+  function filterRows() {
+    const term = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#attendeesTable tr.guest-row');
     const noResults = document.getElementById('noResults');
 
     let visibleCount = 0;
 
     rows.forEach(row => {
-      // Exclude warning label row objects if present in grid DOM spaces
-      if (row.classList.contains('table-warning')) return;
-      
       const text = row.innerText.toLowerCase();
-      const match = text.includes(term);
-      row.style.display = match ? '' : 'none';
-      if (match) visibleCount++;
+      const passType = row.getAttribute('data-pass-type') || '';
+      
+      const matchesText = text.includes(term);
+      const matchesType = (activeTypeFilter === 'ALL') || passType.includes(activeTypeFilter);
+
+      if (matchesText && matchesType) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
     });
 
-    // Toggle visual clean empty state grid overlay if count falls flat
     noResults.classList.toggle('d-none', visibleCount > 0);
-  });
+  }
 </script>

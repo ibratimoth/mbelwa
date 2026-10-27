@@ -5,7 +5,7 @@ async function renderLogin(req, res) {
   res.render('auth/login', { event: null, error: null });
 }
 
-async function handleLogin(req, res) {
+async function handleLogin(req, res, next) {
   try {
     const { email, password } = req.body;
 
@@ -35,16 +35,29 @@ async function handleLogin(req, res) {
       });
     }
 
-    req.session.userId = foundUser.id;
-    req.session.user = {
-      id: foundUser.id,
-      name: foundUser.name,
-      email: foundUser.email
-    };
+    // 🔒 REGENERATE SESSION: Prevents session fixation by issuing a brand-new session ID upon login
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error('Session regeneration error:', err);
+        return next(err); // Or handle via your error render/middleware
+      }
 
-    req.session.save((err) => {
-      if (err) throw err;
-      res.redirect('/');
+      // Assign user identification data to the fresh, secure session
+      req.session.userId = foundUser.id;
+      req.session.user = {
+        id: foundUser.id,
+        name: foundUser.name,
+        email: foundUser.email
+      };
+
+      // Save the regenerated session before redirecting to prevent race conditions
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return next(err);
+        }
+        res.redirect('/');
+      });
     });
 
   } catch (err) {

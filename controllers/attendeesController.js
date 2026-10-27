@@ -247,8 +247,14 @@ async function showPublicScanner(req, res) {
     return res.status(404).send('Invalid scanner link');
   }
 
+   const user = {
+      name: req.session.user.name || 'User',
+      email: req.session.user.email || 'unknown'
+    }
+
   res.render('scanner/public-scan', {
-    event
+    event,
+    user
   });
 }
 
@@ -732,7 +738,12 @@ async function showEditor(req, res) {
 
   if (!event) return res.status(404).send('Event not found');
 
-  res.render('events/editor', { event });
+   const user = {
+      name: req.session.user.name || 'User',
+      email: req.session.user.email || 'unknown'
+    }
+
+  res.render('events/editor', { event, user });
 }
 
 async function previewCard(req, res) {
@@ -822,9 +833,15 @@ async function list(req, res) {
     order: [['createdAt', 'DESC']]
   });
 
+   const user = {
+      name: req.session.user.name || 'User',
+      email: req.session.user.email || 'unknown'
+    }
+
   res.render('attendees/list', {
     guests,
-    event
+    event,
+    user
   });
 }
 

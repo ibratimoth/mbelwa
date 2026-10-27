@@ -4,6 +4,7 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const { forwardAuthenticated, ensureAuthenticated } = require('../middleware/auth');
 const { validateRegister, validateLogin } = require('../middleware/validators');
+const verifyCsrf = require('../middleware/verifyCsrf');
 
 router.get('/login', forwardAuthenticated, authController.renderLogin);
 router.post('/login', forwardAuthenticated, validateLogin, authController.handleLogin);

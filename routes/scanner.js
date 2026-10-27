@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const verifyCsrf = require('../middleware/verifyCsrf');
 
 const {
   showPublicScanner,
@@ -13,7 +14,7 @@ router.get(
 
 // Scan via token
 router.post(
-  '/scanner/:token/scan',
+  '/scanner/:token/scan',verifyCsrf,
   scanGuestByToken
 );
 

@@ -60,6 +60,7 @@
       <!-- EDIT TARGET DATA PIPELINE FORM -->
       <form method="post" action="/events/<%= event.id %>/guests/<%= guest.id %>/edit">
 
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <!-- Guest Full Name Field -->
         <div class="mb-3">
           <label class="form-label small fw-bold text-secondary">Full Name</label>

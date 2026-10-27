@@ -33,26 +33,10 @@ const { ensureAuthenticated } = require('../middleware/auth');
 const { validateEventInput } = require('../middleware/validators');
 const { decryptRouteIds } = require('../middleware/decryptParams');
 const { verifyEventOwnership } = require('../middleware/authOwnership');
+const verifyCsrf = require('../middleware/verifyCsrf');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'public/uploads';
 
-// const storage = multer.diskStorage({
-
-//   destination: (req, file, cb) => {
-//     logger.info('Uploading file:', file.fieldname, file.originalname);
-//     if (file.fieldname === 'card_template') {
-//       return cb(null, 'public/templates');
-//     }
-
-//     cb(null, UPLOAD_DIR);
-//   },
-
-//   filename: (req, file, cb) => {
-//     cb(null, `${Date.now()}-${file.originalname}`);
-//   }
-// });
-
-// const upload = multer({ storage });
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -111,11 +95,11 @@ const upload = multer({
 
 router.use(ensureAuthenticated);
 
-router.post('/events/:id/send-invite', decryptRouteIds, sendInvite);
-router.post('/events/:id/send-invite-whatsapp', decryptRouteIds, sendWhatsAppInvite);
+router.post('/events/:id/send-invite', decryptRouteIds, verifyCsrf,sendInvite);
+router.post('/events/:id/send-invite-whatsapp', decryptRouteIds, verifyCsrf,sendWhatsAppInvite);
 // List guests for an event
 router.get('/events/:eventId/guests', decryptRouteIds, verifyEventOwnership, list);
-router.post('/events/create', upload.single('card_template'), validateEventInput, createEvent);
+router.post('/events/create', upload.single('card_template'), validateEventInput, verifyCsrf, createEvent);
 
 router.get('/events/:id/preview', decryptRouteIds, verifyEventOwnership,previewCard);
 router.post('/events/:id/layout', decryptRouteIds, updateLayoutConfig);
@@ -123,30 +107,30 @@ router.get('/events/:id/editor', decryptRouteIds, verifyEventOwnership, showEdit
 
 // Upload guests
 router.get('/events/:eventId/guests/upload', decryptRouteIds, verifyEventOwnership,showUploadForm);
-router.post('/events/:eventId/guests/upload', decryptRouteIds, upload.single('csvfile'), handleCsvUpload);
+router.post('/events/:eventId/guests/upload', decryptRouteIds, upload.single('csvfile'), verifyCsrf,handleCsvUpload);
 
 // Edit guest
 router.get('/events/:eventId/guests/:id/edit', decryptRouteIds, verifyEventOwnership, editForm);
-router.post('/events/:eventId/guests/:id/edit', decryptRouteIds, updateGuest);
+router.post('/events/:eventId/guests/:id/edit', decryptRouteIds, verifyCsrf,updateGuest);
 
 // Download card
 router.get('/events/:eventId/guests/:id/download', decryptRouteIds, verifyEventOwnership, downloadCard);
 
 // Scan (QR validation)
 router.get('/events/:eventId/scan', decryptRouteIds, verifyEventOwnership, showScan);
-router.post('/events/:eventId/scan', decryptRouteIds,scanGuest);
+router.post('/events/:eventId/scan', decryptRouteIds, verifyCsrf,scanGuest);
 
 // Generate scanner link
 router.post(
-  '/events/:id/generate-scanner-link', decryptRouteIds,
+  '/events/:id/generate-scanner-link', decryptRouteIds,verifyCsrf,
   generateScannerLink
 );
 
 
 
-router.post('/events/:id/send-scanner-link', decryptRouteIds, sendScannerLink);
+router.post('/events/:id/send-scanner-link', decryptRouteIds, verifyCsrf,sendScannerLink);
 
-router.post('/sms/webhook', smsWebhook);
+router.post('/sms/webhook', verifyCsrf,smsWebhook);
 
 // Add GET handler for provider verification checks
 router.get('/sms/webhook', (req, res) => {
@@ -159,7 +143,7 @@ router.get(
 );
 
 router.post(
-  '/sms/campaigns/:campaignId/retry-failed', decryptRouteIds,
+  '/sms/campaigns/:campaignId/retry-failed', decryptRouteIds, verifyCsrf,
   retryFailedSms
 );
 

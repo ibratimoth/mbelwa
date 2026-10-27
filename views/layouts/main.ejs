@@ -4,195 +4,221 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wedding Card Manager</title>
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <meta name="theme-color" content="#073a4a">
+  <title>Delle Cards | Invitation management</title>
 
-  <!-- Google Fonts for a clean, modern look -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/jpeg" href="/images/delleventures.jpeg">
+  <link rel="apple-touch-icon" href="/images/delleventures.jpeg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     :root {
-      /* Logo-inspired Color Palette */
-      --delle-teal: #0E6171;
-      --delle-teal-hover: #0a4854;
-      --delle-gold: #E0A21E;
+      --delle-teal: #0e697b;
+      --delle-teal-hover: #0a5160;
+      --delle-teal-deep: #073a4a;
+      --delle-teal-soft: rgba(14, 105, 123, 0.08);
+      --delle-gold: #e5a000;
       --delle-gold-hover: #c48c17;
-      --delle-light-bg: #f8f9fa;
-      --delle-dark: #212529;
+      --delle-gold-soft: rgba(229, 160, 0, 0.14);
+      --delle-light-bg: #f4f7f8;
+      --delle-dark: #0f2530;
+      --delle-muted: #5d7079;
+      --delle-border: rgba(15, 37, 48, 0.1);
+      --header-h: 108px; /* updated by script to the real header height */
     }
+
+    html { scroll-padding-top: calc(var(--header-h) + 12px); }
 
     body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--delle-light-bg);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: var(--delle-light-bg);
       color: var(--delle-dark);
-      padding-top: 85px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Branded Navbar Styling */
-    .navbar-branded {
-      background-color: #ffffff;
-      border-bottom: 2px solid var(--delle-teal);
-    }
+    :focus-visible { outline: 3px solid var(--delle-gold); outline-offset: 2px; }
 
-    .navbar-brand-text {
-      color: var(--delle-teal);
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
+    .skip-link { position: absolute; left: -999px; top: 8px; background: var(--delle-teal-deep); color: #fff; padding: .6rem 1rem; border-radius: 8px; z-index: 3000; }
+    .skip-link:focus { left: 8px; color: #fff; }
 
-    .navbar-brand-text span {
-      color: var(--delle-gold);
+    /* ---------- Header ---------- */
+    .site-header {
+      position: sticky; top: 0; z-index: 1030;
+      background: rgba(255, 255, 255, .94);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--delle-border);
     }
+    .topbar { display: flex; align-items: center; gap: 1rem; height: 64px; }
 
-    /* Dynamic Event Badge */
-    .badge-event {
-      background-color: rgba(14, 97, 113, 0.1);
-      color: var(--delle-teal);
-      border: 1px solid rgba(14, 97, 113, 0.2);
-      font-weight: 500;
-      padding: 0.5rem 0.75rem;
-    }
+    .brand { display: inline-flex; align-items: center; gap: .65rem; text-decoration: none; }
+    .brand img { height: 36px; width: 36px; object-fit: cover; border-radius: 10px; border: 1px solid var(--delle-border); }
+    .brand-word { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 1.3rem; letter-spacing: -.01em; color: var(--delle-teal); }
+    .brand-word span { color: var(--delle-gold); }
 
-    /* Brand System Buttons */
-    .btn-delle-teal {
-      background-color: var(--delle-teal);
-      color: #ffffff;
-      border: 1px solid var(--delle-teal);
-      transition: all 0.2s ease-in-out;
-    }
+    .top-actions { margin-left: auto; display: flex; align-items: center; gap: .5rem; }
+    .top-link { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem .8rem; border-radius: 10px; color: var(--delle-dark); font-weight: 600; font-size: .9rem; text-decoration: none; }
+    .top-link:hover { background: var(--delle-teal-soft); color: var(--delle-teal); }
 
-    .btn-delle-teal:hover {
-      background-color: var(--delle-teal-hover);
-      color: #ffffff;
-    }
+    /* Account menu */
+    .acct-btn { display: inline-flex; align-items: center; gap: .6rem; background: #fff; border: 1px solid var(--delle-border); border-radius: 999px; padding: .25rem .7rem .25rem .25rem; color: var(--delle-dark); }
+    .acct-btn:hover { border-color: rgba(14,105,123,.4); }
+    .avatar-circle { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--delle-teal); color: #fff; font-weight: 700; font-size: .85rem; flex: none; }
+    .acct-name { font-weight: 600; font-size: .85rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .acct-menu { min-width: 250px; border: 1px solid var(--delle-border); border-radius: 14px; padding: .5rem; box-shadow: 0 18px 40px rgba(7,58,74,.16); }
+    .acct-menu .who { padding: .6rem .75rem .75rem; border-bottom: 1px solid var(--delle-border); margin-bottom: .4rem; }
+    .acct-menu .who b { display: block; font-size: .92rem; }
+    .acct-menu .who span { color: var(--delle-muted); font-size: .8rem; word-break: break-all; }
+    .acct-menu .dropdown-item { border-radius: 8px; padding: .55rem .75rem; display: flex; align-items: center; gap: .6rem; font-weight: 500; font-size: .9rem; }
+    .acct-menu .dropdown-item:hover { background: var(--delle-teal-soft); color: var(--delle-teal); }
+    .acct-menu .dropdown-item.danger { color: #b02a4b; }
+    .acct-menu .dropdown-item.danger:hover { background: rgba(176,42,75,.08); color: #b02a4b; }
 
-    .btn-delle-outline {
-      background-color: transparent;
-      color: var(--delle-teal);
-      border: 1px solid var(--delle-teal);
-      transition: all 0.2s ease-in-out;
-    }
+    /* ---------- Event sub-navigation ---------- */
+    .event-bar { border-top: 1px solid var(--delle-border); }
+    .event-bar-inner { display: flex; align-items: stretch; gap: 1.5rem; height: 44px; }
+    .event-name { display: none; align-items: center; gap: .5rem; font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: .98rem; color: var(--delle-teal-deep); max-width: 280px; padding-right: 1.5rem; border-right: 1px solid var(--delle-border); }
+    .event-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .event-name i { color: var(--delle-gold); font-size: 1.15rem; flex: none; }
+    @media (min-width: 768px) { .event-name { display: flex; } }
 
-    .btn-delle-outline:hover {
-      background-color: var(--delle-teal);
-      color: #ffffff;
-    }
+    .tabs { display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: none; margin: 0 -.5rem; padding: 0 .5rem; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { position: relative; display: inline-flex; align-items: center; gap: .45rem; padding: 0 .85rem; font-weight: 600; font-size: .88rem; color: var(--delle-muted); text-decoration: none; white-space: nowrap; transition: color .15s; }
+    .tab i { font-size: 1.15rem; }
+    .tab:hover { color: var(--delle-teal); }
+    .tab[aria-current="page"] { color: var(--delle-teal); }
+    .tab[aria-current="page"]::after { content: ''; position: absolute; left: .6rem; right: .6rem; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--delle-gold); }
 
-    .btn-delle-gold {
-      background-color: var(--delle-gold);
-      color: #ffffff;
-      border: 1px solid var(--delle-gold);
-      transition: all 0.2s ease-in-out;
-    }
+    /* ---------- Legacy brand buttons (used by other pages) ---------- */
+    .btn-delle-teal { background: var(--delle-teal); color: #fff; border: 1px solid var(--delle-teal); border-radius: 10px; font-weight: 600; transition: background .15s, box-shadow .15s; }
+    .btn-delle-teal:hover { background: var(--delle-teal-hover); color: #fff; box-shadow: 0 4px 12px rgba(14,105,123,.22); }
+    .btn-delle-outline { background: #fff; color: var(--delle-teal); border: 1px solid rgba(14,105,123,.28); border-radius: 10px; font-weight: 600; transition: background .15s; }
+    .btn-delle-outline:hover { background: var(--delle-teal-soft); border-color: var(--delle-teal); color: var(--delle-teal); }
+    .btn-delle-gold { background: var(--delle-gold); color: #1d1500; border: 1px solid var(--delle-gold); border-radius: 10px; font-weight: 600; transition: background .15s, box-shadow .15s; }
+    .btn-delle-gold:hover { background: var(--delle-gold-hover); border-color: var(--delle-gold-hover); color: #1d1500; box-shadow: 0 4px 12px rgba(229,160,0,.28); }
+    .badge-event { background: var(--delle-teal-soft); color: var(--delle-teal); border: 1px solid rgba(14,105,123,.15); font-weight: 600; font-size: .825rem; padding: .45rem .85rem; border-radius: 10px; }
 
-    .btn-delle-gold:hover {
-      background-color: var(--delle-gold-hover);
-      color: #ffffff;
-    }
+    /* Invitation editor draggable elements */
+    .draggable { position: absolute; padding: 6px 12px; background: rgba(14,105,123,.92); color: #fff; border-radius: 8px; cursor: grab; user-select: none; box-shadow: 0 8px 16px rgba(0,0,0,.12); font-size: .85rem; font-weight: 500; }
+    .draggable:active { cursor: grabbing; }
 
-    /* Draggable elements interface */
-    .draggable {
-      position: absolute;
-      padding: 6px 10px;
-      background: rgba(14, 97, 113, 0.85);
-      color: white;
-      border-radius: 6px;
-      cursor: grab;
-      user-select: none;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
+    /* ---------- Footer ---------- */
+    .site-footer { margin-top: auto; border-top: 1px solid var(--delle-border); background: #fff; color: var(--delle-muted); font-size: .82rem; }
+    .site-footer .container { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: space-between; padding-top: 1.1rem; padding-bottom: 1.1rem; }
+
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 </head>
 
 <body>
+  <a href="#main" class="skip-link">Skip to content</a>
 
-  <nav class="navbar navbar-expand-lg navbar-light fixed-top navbar-branded shadow-sm">
+  <%
+    const hasEvent = (typeof event !== 'undefined' && event);
+    const signedIn = (typeof isAuthenticated !== 'undefined' && isAuthenticated);
+    const hasUser  = (typeof user !== 'undefined' && user);
+    const initial  = hasUser && user.name ? user.name.charAt(0).toUpperCase() : 'U';
+  %>
+
+  <header class="site-header" id="siteHeader">
     <div class="container">
+      <div class="topbar">
+        <a href="/" class="brand" aria-label="Delle Cards home">
+          <img src="/images/delleventures.jpeg" alt="">
+          <span class="brand-word">Delle<span>Cards</span></span>
+        </a>
 
-      <!-- Logo Branding Integration -->
-      <a href="/" class="navbar-brand d-flex align-items-center gap-2">
-        <img src="/images/delleventures.jpeg" alt="Delle Logo" height="35" class="d-inline-block align-top rounded">
-        <span class="navbar-brand-text mb-0 h6 fw-bold">Wedding<span>Manager</span></span>
-      </a>
+        <div class="top-actions">
+          <% if (signedIn) { %>
+            <a href="/" class="top-link d-none d-sm-inline-flex"><i class="bx bx-grid-alt fs-5"></i> All events</a>
 
-      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav"
-        aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <div class="collapse navbar-collapse" id="nav">
-
-        <% if (typeof event !=='undefined' && event) { %>
-          <div class="ms-lg-3 my-2 my-lg-0 me-auto">
-            <span class="badge badge-event d-inline-flex align-items-center gap-1">
-              <i class="bx bx-calendar fs-6"></i>
-              <%= event.title %>
-            </span>
-          </div>
-          <% } %>
-
-            <div class="ms-auto d-flex flex-wrap gap-2 align-items-center">
-              <% if (typeof isAuthenticated !=='undefined' && isAuthenticated) { %>
-
-                <% if (typeof event !=='undefined' && event) { %>
-                  <a href="/events/<%= event.id %>/guests"
-                    class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
-                    <i class="bx bx-group"></i> Guests
-                  </a>
-
-                  <a href="/events/<%= event.id %>/guests/upload"
-                    class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
-                    <i class="bx bx-upload"></i> Upload
-                  </a>
-
-                  <a href="/events/<%= event.id %>/scan"
-                    class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
-                    <i class="bx bx-qr-scan"></i> Scan
-                  </a>
-
-                  <a href="/events/<%= event.id %>"
-                    class="btn btn-delle-teal btn-sm d-inline-flex align-items-center gap-1">
-                    <i class="bx bx-wreath"></i> My Event
-                  </a>
-                  <% } %>
-
-                    <a href="/" class="btn btn-delle-gold btn-sm d-inline-flex align-items-center gap-1">
-                      <i class="bx bx-grid-alt"></i> Dashboard
-                    </a>
-
-                    <form action="/logout" method="POST" class="d-inline">
-                      <button type="submit"
-                        class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1">
-                        <i class="bx bx-log-out"></i> Logout
-                      </button>
-                    </form>
-
-                    <% } else { %>
-
-                      <a href="/login" class="btn btn-delle-outline btn-sm d-inline-flex align-items-center gap-1">
-                        <i class="bx bx-log-in"></i> Sign In
-                      </a>
-
-                      <a href="/register" class="btn btn-delle-teal btn-sm d-inline-flex align-items-center gap-1">
-                        <i class="bx bx-user-plus"></i> Register
-                      </a>
-
-                      <% } %>
+            <div class="dropdown">
+              <button class="acct-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+                <span class="avatar-circle"><%= initial %></span>
+                <span class="acct-name d-none d-md-inline"><%= hasUser ? (user.name || 'My account') : 'My account' %></span>
+                <i class="bx bx-chevron-down text-muted"></i>
+              </button>
+              <div class="dropdown-menu dropdown-menu-end acct-menu">
+                <% if (hasUser) { %>
+                  <div class="who">
+                    <b><%= user.name || 'My account' %></b>
+                    <span><%= user.email %></span>
+                  </div>
+                <% } %>
+                <a class="dropdown-item d-sm-none" href="/"><i class="bx bx-grid-alt fs-5"></i> All events</a>
+                <form action="/logout" method="POST" class="m-0">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit" class="dropdown-item danger"><i class="bx bx-log-out fs-5"></i> Log out</button>
+                </form>
+              </div>
             </div>
-
+          <% } else { %>
+            <a href="/login" class="btn btn-delle-outline btn-sm px-3 py-2">Sign in</a>
+            <a href="/register" class="btn btn-delle-teal btn-sm px-3 py-2">Create account</a>
+          <% } %>
+        </div>
       </div>
     </div>
-  </nav>
 
-  <!-- Inner Page Dynamic Body Injection -->
-  <main class="container mb-5">
+    <% if (signedIn && hasEvent) { %>
+      <div class="event-bar">
+        <div class="container">
+          <div class="event-bar-inner">
+            <div class="event-name" title="<%= event.title %>">
+              <i class="bx bx-calendar-heart"></i><span><%= event.title %></span>
+            </div>
+            <nav class="tabs" aria-label="Event">
+              <a class="tab" data-tab href="/events/<%= event.id %>"><i class="bx bx-home-alt-2"></i>Overview</a>
+              <a class="tab" data-tab href="/events/<%= event.id %>/guests"><i class="bx bx-group"></i>Guests</a>
+              <a class="tab" data-tab href="/events/<%= event.id %>/guests/upload"><i class="bx bx-upload"></i>Import</a>
+              <a class="tab" data-tab href="/events/<%= event.id %>/scan"><i class="bx bx-qr-scan"></i>Scanner</a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    <% } %>
+  </header>
+
+  <main id="main" class="container py-4 py-lg-5">
     <%- body %>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <footer class="site-footer">
+    <div class="container">
+      <span>Delle Cards by Delle Ventures</span>
+      <span>Digital invitations and guest check-in</span>
+    </div>
+  </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Mark the current tab: the longest matching link wins, so Import is not confused with Guests.
+    (function () {
+      const path = location.pathname.replace(/\/+$/, '') || '/';
+      let best = null;
+      document.querySelectorAll('[data-tab]').forEach(a => {
+        const href = a.getAttribute('href');
+        if ((path === href || path.startsWith(href + '/')) && (!best || href.length > best.getAttribute('href').length)) best = a;
+      });
+      if (best) best.setAttribute('aria-current', 'page');
+
+      // Expose the real header height so sticky page elements can sit just below it.
+      const header = document.getElementById('siteHeader');
+      const setH = () => document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+      setH(); window.addEventListener('resize', setH);
+    })();
+  </script>
 </body>
 
 </html>

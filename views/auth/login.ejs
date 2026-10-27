@@ -4,140 +4,313 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Wedding Card Manager</title>
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <title>Sign In — Delle Cards</title>
 
-  <!-- Google Fonts & Icons -->
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/images/delleventures.jpeg">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 & Boxicons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
   <style>
     :root {
-      --delle-teal: #0E6171;
-      --delle-teal-hover: #0a4854;
-      --delle-gold: #E0A21E;
+      --delle-teal: #0e697b;
+      --delle-teal-dark: #073a4a;
+      --delle-teal-soft: rgba(14, 105, 123, 0.08);
+      --delle-gold: #e5a000;
       --delle-gold-hover: #c48c17;
-      --delle-light-bg: #f8f9fa;
-      --delle-dark: #212529;
+      --delle-dark-bg: #0b132b;
+      --delle-light-bg: #f8fafc;
+      --delle-border: rgba(15, 23, 42, 0.08);
     }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background-color: var(--delle-light-bg);
-      color: var(--delle-dark);
-      padding-top: 85px;
+      color: #0f172a;
       min-height: 100vh;
       display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Main Container Shell */
+    .auth-shell {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Left Showcase Hero Panel */
+    .auth-hero-panel {
+      background: linear-gradient(135deg, var(--delle-teal-dark) 0%, var(--delle-teal) 100%);
+      color: #ffffff;
+      flex: 1;
+      display: flex;
       flex-direction: column;
+      justify-content: space-between;
+      padding: 3.5rem;
+      position: relative;
+      overflow: hidden;
     }
 
-    /* Branded Navbar */
-    .navbar-branded {
+    .auth-hero-panel::after {
+      content: '';
+      position: absolute;
+      right: -100px;
+      bottom: -100px;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(229, 160, 0, 0.25) 0%, rgba(255, 255, 255, 0) 70%);
+      pointer-events: none;
+    }
+
+    .hero-feature-badge {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 0.75rem 1.25rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      max-width: 380px;
+    }
+
+    /* Right Form Control Panel */
+    .auth-form-panel {
+      width: 100%;
+      max-width: 520px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3.5rem 3rem;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.02);
+    }
+
+    /* Custom Form Control Highlights */
+    .form-control {
+      border: 1px solid var(--delle-border);
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.925rem;
+      transition: all 0.2s ease;
+      background-color: #f8fafc;
+    }
+
+    .form-control:focus {
       background-color: #ffffff;
-      border-bottom: 2px solid var(--delle-teal);
+      border-color: var(--delle-teal);
+      box-shadow: 0 0 0 4px var(--delle-teal-soft);
     }
 
-    .navbar-brand-text {
-      color: var(--delle-teal);
-      font-weight: 700;
-      letter-spacing: -0.5px;
+    .input-group-text {
+      background-color: #f8fafc;
+      border: 1px solid var(--delle-border);
+      border-right: none;
+      color: #64748b;
+      border-top-left-radius: 10px;
+      border-bottom-left-radius: 10px;
     }
 
-    .navbar-brand-text span {
-      color: var(--delle-gold);
+    .input-group .form-control {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
     }
 
-    /* System Buttons */
+    /* Primary Action Buttons */
     .btn-delle-teal {
       background-color: var(--delle-teal);
       color: #ffffff;
-      border: 1px solid var(--delle-teal);
-      transition: all 0.2s ease-in-out;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      padding: 0.85rem 1.5rem;
+      transition: all 0.25s ease;
     }
 
     .btn-delle-teal:hover {
-      background-color: var(--delle-teal-hover);
+      background-color: var(--delle-teal-dark);
       color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(14, 105, 123, 0.25);
     }
 
-    .btn-delle-outline {
-      background-color: transparent;
-      color: var(--delle-teal);
-      border: 1px solid var(--delle-teal);
-      transition: all 0.2s ease-in-out;
+    .password-toggle-btn {
+      cursor: pointer;
+      background-color: #f8fafc;
+      border: 1px solid var(--delle-border);
+      border-left: none;
+      color: #64748b;
+      border-top-right-radius: 10px;
+      border-bottom-right-radius: 10px;
     }
 
-    .btn-delle-outline:hover {
-      background-color: var(--delle-teal);
-      color: #ffffff;
+    /* Mobile Responsive Tweak */
+    @media (max-width: 991.98px) {
+      .auth-hero-panel {
+        display: none;
+      }
+
+      .auth-form-panel {
+        max-width: 100%;
+        min-height: 100vh;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <!-- Top Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-light fixed-top navbar-branded shadow-sm">
-    <div class="container">
-      <a href="/" class="navbar-brand d-flex align-items-center gap-2">
-        <img src="/images/delleventures.jpeg" alt="Delle Logo" height="35" class="d-inline-block align-top rounded">
-        <span class="navbar-brand-text mb-0 h6 fw-bold">Wedding<span>Manager</span></span>
-      </a>
+  <div class="auth-shell">
 
-      <div class="ms-auto d-flex align-items-center gap-2">
-        <a href="/register" class="btn btn-delle-outline btn-sm">Create Account</a>
+    <!-- LEFT COLUMN: BRAND SHOWCASE HERO -->
+    <div class="auth-hero-panel">
+      <!-- Header Branding -->
+      <div class="d-flex align-items-center gap-2.5">
+        <img src="/images/delleventures.jpeg" alt="Delle Cards Logo" height="42"
+          class="rounded-3 shadow-sm border border-white border-opacity-20">
+        <span class="fs-4 fw-bold text-white tracking-tight">Delle<span
+            style="color: var(--delle-gold);">Cards</span></span>
+      </div>
+
+      <!-- Center Hero Statement -->
+      <div class="my-auto py-5" style="z-index: 2; max-width: 480px;">
+        <span
+          class="badge rounded-pill bg-white bg-opacity-10 text-white px-3 py-1.5 fw-semibold mb-3 border border-white border-opacity-20">
+          <i class="bx bx-shield-quarter text-warning me-1"></i> Secure Event Gateway
+        </span>
+        <h1 class="display-6 fw-bold text-white mb-3" style="line-height: 1.2;">
+          Manage Events & Invitations with Precision.
+        </h1>
+        <p class="fs-6 text-white-50 mb-4 fw-normal">
+          Access real-time guest analytics, dispatch digital QR passes via SMS & WhatsApp, and monitor live entrance
+          scanning routines.
+        </p>
+
+        <!-- Feature Pill -->
+        <div class="hero-feature-badge shadow-sm">
+          <div class="p-2 rounded-2 bg-warning bg-opacity-20 text-warning">
+            <i class="bx bx-qr-scan fs-4"></i>
+          </div>
+          <div>
+            <div class="fw-bold text-white fs-7">Real-time Check-in Verification</div>
+            <div class="text-white-50 fs-8">Automated double-entry detection system</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="text-white-50 small" style="z-index: 2;">
+        &copy; <%= new Date().getFullYear() %> Delle Ventures. All rights reserved.
       </div>
     </div>
-  </nav>
 
-  <!-- Login Main Content -->
-  <main class="container my-auto py-5">
-    <div class="row justify-content-center">
-      <div class="col-md-6 col-lg-4">
-        <div class="card border-0 shadow-sm p-4 bg-white" style="border-top: 4px solid var(--delle-teal) !important;">
-          
-          <div class="text-center mb-4">
-            <h4 class="fw-bold text-dark">Welcome Back</h4>
-            <p class="text-muted small">Sign in to manage your wedding card events</p>
+    <!-- RIGHT COLUMN: AUTHENTICATION FORM PANEL -->
+    <div class="auth-form-panel">
+
+      <!-- Mobile Top Logo (Visible only on smaller screens) -->
+      <div class="d-lg-none text-center mb-4">
+        <img src="/images/delleventures.jpeg" alt="Delle Cards Logo" height="40" class="rounded-3 border mb-2">
+        <h4 class="fw-bold text-dark mb-0">Delle<span style="color: var(--delle-gold);">Cards</span></h4>
+      </div>
+
+      <div class="mb-4">
+        <h3 class="fw-bold text-dark mb-1">Welcome Back</h3>
+        <p class="text-muted small mb-0">Enter your account credentials to access your console</p>
+      </div>
+
+      <!-- Flash Error Notification -->
+      <% if (typeof error !=='undefined' && error) { %>
+        <div
+          class="alert alert-danger border-0 bg-danger-subtle text-danger d-flex align-items-center gap-2.5 small py-2.5 px-3 rounded-3 mb-4"
+          role="alert">
+          <i class="bx bx-error-circle fs-5 flex-shrink-0"></i>
+          <div class="fw-medium">
+            <%= error %>
           </div>
+        </div>
+        <% } %>
 
-          <% if (typeof error !== 'undefined' && error) { %>
-            <div class="alert alert-danger d-flex align-items-center gap-2 small py-2 mb-3" role="alert">
-              <i class="bx bx-error-circle fs-5"></i>
-              <div><%= error %></div>
-            </div>
-          <% } %>
-
+          <!-- Authentication Form -->
           <form action="/login" method="POST">
-            <div class="mb-3">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+            <!-- Email Address -->
+            <div class="mb-3.5">
               <label class="form-label small fw-bold text-secondary">Email Address</label>
               <div class="input-group">
-                <span class="input-group-text bg-light text-muted"><i class="bx bx-envelope"></i></span>
-                <input type="email" name="email" class="form-control" value="<%= typeof email !== 'undefined' ? email : '' %>" required placeholder="name@example.com">
+                <span class="input-group-text"><i class="bx bx-envelope fs-5"></i></span>
+                <input type="email" name="email" class="form-control"
+                  value="<%= typeof email !== 'undefined' ? email : '' %>" required placeholder="name@company.com"
+                  autofocus>
               </div>
             </div>
 
+            <!-- Password Field with Interactive Toggle -->
             <div class="mb-4">
-              <label class="form-label small fw-bold text-secondary">Password</label>
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-bold text-secondary mb-0">Password</label>
+              </div>
               <div class="input-group">
-                <span class="input-group-text bg-light text-muted"><i class="bx bx-lock-alt"></i></span>
-                <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                <span class="input-group-text"><i class="bx bx-lock-alt fs-5"></i></span>
+                <input type="password" name="password" id="passwordInput" class="form-control" required
+                  placeholder="••••••••">
+                <button class="btn password-toggle-btn px-3 d-flex align-items-center" type="button"
+                  id="togglePasswordBtn">
+                  <i class="bx bx-hide fs-5" id="togglePasswordIcon"></i>
+                </button>
               </div>
             </div>
 
-            <button type="submit" class="btn btn-delle-teal w-100 py-2 fw-medium shadow-sm">
-              Sign In
+            <!-- Submit Button -->
+            <button type="submit"
+              class="btn btn-delle-teal w-100 shadow-sm d-inline-flex align-items-center justify-content-center gap-2">
+              <span>Sign In to Console</span>
+              <i class="bx bx-right-arrow-alt fs-5"></i>
             </button>
           </form>
 
+          <!-- Bottom Registration Link -->
           <div class="text-center mt-4 pt-3 border-top">
-            <p class="small text-muted mb-0">Don't have an account? <a href="/register" class="fw-bold text-decoration-none" style="color: var(--delle-teal);">Register here</a></p>
+            <p class="small text-muted mb-0">
+              Don't have an event manager account?
+              <a href="/register" class="fw-bold text-decoration-none ms-1" style="color: var(--delle-teal);">Create
+                Account</a>
+            </p>
           </div>
 
-        </div>
-      </div>
     </div>
-  </main>
+
+  </div>
+
+  <!-- Password Visibility Toggle Driver -->
+  <script>
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    const passwordInput = document.getElementById('passwordInput');
+    const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+    if (togglePasswordBtn && passwordInput && togglePasswordIcon) {
+      togglePasswordBtn.addEventListener('click', function () {
+        const isPassword = passwordInput.getAttribute('type') === 'password';
+        passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+
+        togglePasswordIcon.classList.toggle('bx-hide', !isPassword);
+        togglePasswordIcon.classList.toggle('bx-show', isPassword);
+      });
+    }
+  </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
