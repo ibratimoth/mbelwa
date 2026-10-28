@@ -1,134 +1,237 @@
-<!-- 
 <% layout('layouts/main', { event: event }) -%>
+<%
+  const type  = (guest.type || '').toString().toLowerCase();
+  const known = ['single', 'double'].includes(type);
+  const scans = Number(guest.scans) || 0;
+  const status = scans === 0 ? 'Not arrived yet' : (scans === 1 ? 'Checked in' : 'Scanned ' + scans + ' times');
+  const stClass = scans === 0 ? 'none' : (scans === 1 ? 'in' : 'dup');
+%>
 
-<h3>Edit Guest</h3>
+<style>
+  .eg { --teal: var(--delle-teal, #0e697b); --teal-deep: var(--delle-teal-deep, #073a4a); --gold: var(--delle-gold, #e5a000);
+        --ink: var(--delle-dark, #0f2530); --muted: var(--delle-muted, #5d7079); --line: var(--delle-border, rgba(15,37,48,.1));
+        --soft: var(--delle-teal-soft, rgba(14,105,123,.08)); --wash: #f4f7f8; --ok: #198754; --bad: #c2255c;
+        max-width: 760px; margin: 0 auto; }
+  .eg .serif { font-family: 'Fraunces', Georgia, serif; font-weight: 600; letter-spacing: -.01em; }
+  .eg :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
-<form method="post"
-      action="/events/<%= event.id %>/guests/<%= guest.id %>/edit">
+  .crumbs { display: flex; align-items: center; gap: .4rem; font-size: .88rem; color: var(--muted); margin-bottom: 1.1rem; }
+  .crumbs a { color: var(--teal); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: .25rem; }
+  .crumbs a:hover { color: var(--teal-deep); text-decoration: underline; }
 
-  <div class="mb-3">
-    <label>Name</label>
-    <input class="form-control" name="name" value="<%= guest.name %>">
-  </div>
+  .eg-panel { background: #fff; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
 
-  <div class="mb-3">
-    <label>Phone</label>
-    <input class="form-control" name="phone" value="<%= guest.phone %>">
-  </div>
+  /* Header band */
+  .eg-top { background: linear-gradient(120deg, var(--teal-deep), var(--teal)); color: #fff; padding: 1.5rem 1.75rem; display: flex; align-items: center; gap: 1.1rem; position: relative; overflow: hidden; }
+  .eg-top::after { content: ''; position: absolute; right: -60px; bottom: -90px; width: 220px; height: 220px; border-radius: 50%; border: 1px solid rgba(229,160,0,.35); box-shadow: 0 0 0 24px rgba(229,160,0,.05); }
+  .eg-av { width: 58px; height: 58px; border-radius: 50%; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); display: grid; place-items: center; font-size: 1.5rem; font-weight: 700; flex: none; }
+  .eg-top h1 { font-size: 1.5rem; margin: 0 0 .35rem; color: #fff; line-height: 1.15; word-break: break-word; }
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; position: relative; z-index: 1; }
+  .chip { font-size: .78rem; font-weight: 600; padding: .22rem .7rem; border-radius: 999px; background: rgba(255,255,255,.16); color: #fff; }
+  .chip.gold { background: var(--gold); color: #1d1500; }
+  .eg-top > div { position: relative; z-index: 1; }
 
-  <div class="mb-3">
-    <label>Type</label>
-    <select class="form-select" name="type">
-      <option value="single" <%= guest.type==='single'?'selected':'' %>>Single</option>
-      <option value="double" <%= guest.type==='double'?'selected':'' %>>Double</option>
-    </select>
-  </div>
+  /* Form */
+  .eg form { padding: 0; }
+  .sec { padding: 1.5rem 1.75rem; border-top: 1px solid var(--line); }
+  .sec:first-of-type { border-top: 0; }
+  .sec h2 { font-size: 1rem; font-weight: 700; margin: 0 0 .2rem; }
+  .sec > p { color: var(--muted); font-size: .86rem; margin: 0 0 1.1rem; }
+  .fld { margin-bottom: 1rem; } .fld:last-child { margin-bottom: 0; }
+  .fld label.l { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; }
+  .fld input[type="text"], .fld input[type="number"] { width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 10px; padding: 0 .9rem; font-size: .95rem; background: #fff; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+  .fld input:focus { outline: 0; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14,105,123,.15); }
+  .fld .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92rem; }
+  .hint { color: var(--muted); font-size: .8rem; margin-top: .35rem; }
 
-  <div class="mb-3">
-    <label>Number of Scans</label>
-    <input class="form-control" name="scans" value="<%= guest.scans %>">
-  </div>
+  /* Pass type choice cards */
+  .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .75rem; }
+  .opt { position: relative; margin: 0; cursor: pointer; }
+  .opt input { position: absolute; opacity: 0; inset: 0; }
+  .opt-body { display: flex; align-items: center; gap: .8rem; border: 1.5px solid var(--line); border-radius: 12px; padding: .85rem 1rem; transition: border-color .15s, background .15s; }
+  .opt-body .ic { width: 40px; height: 40px; border-radius: 10px; background: var(--soft); color: var(--teal); display: grid; place-items: center; font-size: 1.3rem; flex: none; }
+  .opt-body b { display: block; font-size: .92rem; } .opt-body small { color: var(--muted); font-size: .8rem; }
+  .opt:hover .opt-body { border-color: rgba(14,105,123,.45); }
+  .opt input:checked + .opt-body { border-color: var(--teal); background: var(--soft); box-shadow: 0 0 0 3px rgba(14,105,123,.1); }
+  .opt input:checked + .opt-body .ic { background: var(--teal); color: #fff; }
+  .opt input:focus-visible + .opt-body { outline: 3px solid var(--gold); outline-offset: 2px; }
 
-  <button class="btn btn-primary">Save</button>
+  /* Check-in record */
+  .sec.record { background: rgba(229,160,0,.07); }
+  .step { display: inline-flex; align-items: center; border: 1px solid var(--line); background: #fff; border-radius: 12px; overflow: hidden; }
+  .step button { width: 46px; height: 46px; border: 0; background: #fff; font-size: 1.3rem; color: var(--teal); }
+  .step button:hover { background: var(--soft); }
+  .step input[type="number"] { width: 84px; height: 46px; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-radius: 0; text-align: center; font-weight: 700; font-size: 1.1rem; -moz-appearance: textfield; }
+  .step input::-webkit-outer-spin-button, .step input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .rec-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; }
+  .link-btn { background: none; border: 0; color: var(--teal); font-weight: 600; font-size: .88rem; padding: .3rem 0; text-decoration: underline; text-underline-offset: 3px; }
+  .st { display: inline-flex; align-items: center; gap: .45rem; font-weight: 600; font-size: .88rem; }
+  .st::before { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #9fb0b8; }
+  .st.in { color: var(--ok); } .st.in::before { background: var(--ok); border-color: var(--ok); }
+  .st.dup { color: var(--bad); } .st.dup::before { background: var(--bad); border-color: var(--bad); }
+  .st.none { color: var(--muted); }
+  .note { display: flex; gap: .5rem; align-items: flex-start; font-size: .83rem; color: #6b4a00; margin-top: .9rem; }
+  .note i { font-size: 1.1rem; margin-top: 1px; }
 
-</form> -->
+  /* Sticky action bar */
+  .bar { position: sticky; bottom: 0; z-index: 5; background: rgba(255,255,255,.95); backdrop-filter: blur(8px); border-top: 1px solid var(--line); padding: .9rem 1.75rem; display: flex; align-items: center; gap: .75rem; }
+  .dirty { font-size: .84rem; color: var(--muted); display: inline-flex; align-items: center; gap: .45rem; margin-right: auto; }
+  .dirty::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #b8c5cb; }
+  .dirty.on { color: #8a5f00; font-weight: 600; } .dirty.on::before { background: var(--gold); }
+  .btn-eg { height: 46px; padding: 0 1.3rem; border-radius: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: .5rem; text-decoration: none; border: 1px solid transparent; }
+  .btn-eg.primary { background: var(--teal); color: #fff; } .btn-eg.primary:hover:not(:disabled) { background: var(--delle-teal-hover, #0a5160); box-shadow: 0 6px 16px rgba(14,105,123,.25); }
+  .btn-eg.primary:disabled { background: #a9c4cb; cursor: not-allowed; }
+  .btn-eg.quiet { background: #fff; color: var(--ink); border-color: var(--line); } .btn-eg.quiet:hover { background: var(--wash); color: var(--ink); }
 
-<% layout('layouts/main', { event: event }) -%>
+  @media (max-width: 575px) {
+    .eg-top, .sec, .bar { padding-left: 1.1rem; padding-right: 1.1rem; }
+    .dirty { display: none; } .bar { justify-content: flex-end; } .bar .btn-eg { flex: 1; justify-content: center; }
+  }
+  @media (prefers-reduced-motion: reduce) { .eg * { transition: none !important; } }
+</style>
 
-<div class="row g-4 justify-content-center mb-5">
-  <div class="col-lg-7">
-    
-    <!-- BACK TO DIRECTORY LINK -->
-    <div class="mb-3">
-      <a href="/events/<%= event.id %>/guests" class="text-secondary text-decoration-none small d-inline-flex align-items-center gap-1">
-        <i class="bx bx-left-arrow-alt fs-5"></i> Back to Guest Directory
-      </a>
-    </div>
+<div class="eg">
 
-    <!-- MAIN FORM CARD Container -->
-    <div class="card border-0 bg-white shadow-sm p-4">
-      
-      <!-- Card Section Header -->
-      <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom">
-        <i class="bx bx-user-pin fs-3 text-secondary"></i>
-        <div>
-          <h4 class="fw-bold text-dark mb-0">Modify Guest Record</h4>
-          <span class="text-muted small">Update profile configuration parameters for this invitation pass.</span>
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a href="/events/<%= event.id %>/guests"><i class="bx bx-left-arrow-alt fs-5"></i> Guests</a>
+    <span aria-hidden="true">/</span>
+    <span>Edit guest</span>
+  </nav>
+
+  <div class="eg-panel">
+
+    <header class="eg-top">
+      <div class="eg-av" aria-hidden="true"><%= guest.name ? guest.name.charAt(0).toUpperCase() : 'G' %></div>
+      <div>
+        <h1 class="serif"><%= guest.name %></h1>
+        <div class="chips">
+          <span class="chip<%= type === 'double' ? ' gold' : '' %>"><%= type ? (type.charAt(0).toUpperCase() + type.slice(1)) + ' pass' : 'No pass type' %></span>
+          <% if (guest.card_number) { %><span class="chip"><%= guest.card_number %></span><% } %>
+          <span class="chip"><%= event.title %></span>
         </div>
       </div>
+    </header>
 
-      <!-- EDIT TARGET DATA PIPELINE FORM -->
-      <form method="post" action="/events/<%= event.id %>/guests/<%= guest.id %>/edit">
+    <form method="post" action="/events/<%= event.id %>/guests/<%= guest.id %>/edit" id="editForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <!-- Guest Full Name Field -->
-        <div class="mb-3">
-          <label class="form-label small fw-bold text-secondary">Full Name</label>
-          <div class="input-group">
-            <span class="input-group-text bg-light text-muted border-end-0"><i class="bx bx-user fs-5"></i></span>
-            <input type="text" class="form-control border-start-0 bg-light" name="name" value="<%= guest.name %>" required placeholder="e.g. John Doe">
+      <section class="sec">
+        <h2>Guest details</h2>
+        <p>How the guest appears on their invitation and where it is sent.</p>
+
+        <div class="fld">
+          <label class="l" for="f_name">Full name</label>
+          <input type="text" id="f_name" name="name" value="<%= guest.name %>" required placeholder="John Doe" autocomplete="off">
+        </div>
+        <div class="fld">
+          <label class="l" for="f_phone">Phone number</label>
+          <input type="text" id="f_phone" name="phone" class="mono" value="<%= guest.phone || '' %>" placeholder="255712345678" inputmode="tel" autocomplete="off">
+          <div class="hint">Include the country code. The invitation is sent to this number.</div>
+        </div>
+        <div class="fld">
+          <label class="l" for="f_card">Card number</label>
+          <input type="text" id="f_card" name="card_number" class="mono" value="<%= guest.card_number || '' %>" placeholder="CARD-84729" autocomplete="off">
+          <div class="hint">The unique code linked to this guest's pass. Change it only if the guest's card was reissued.</div>
+        </div>
+      </section>
+
+      <section class="sec">
+        <h2>Pass type</h2>
+        <p>How many people this invitation admits.</p>
+        <div class="opts" role="radiogroup" aria-label="Pass type">
+          <label class="opt">
+            <input type="radio" name="type" value="single" <%= type === 'single' ? 'checked' : '' %>>
+            <span class="opt-body"><span class="ic"><i class="bx bx-user"></i></span><span><b>Single pass</b><small>Admits one person</small></span></span>
+          </label>
+          <label class="opt">
+            <input type="radio" name="type" value="double" <%= type === 'double' ? 'checked' : '' %>>
+            <span class="opt-body"><span class="ic"><i class="bx bx-group"></i></span><span><b>Double pass</b><small>Admits two people</small></span></span>
+          </label>
+          <% if (!known && guest.type) { %>
+            <label class="opt">
+              <input type="radio" name="type" value="<%= guest.type %>" checked>
+              <span class="opt-body"><span class="ic"><i class="bx bx-purchase-tag"></i></span><span><b><%= guest.type %></b><small>Current pass type</small></span></span>
+            </label>
+          <% } %>
+        </div>
+      </section>
+
+      <section class="sec record">
+        <h2>Check-in record</h2>
+        <p>How many times this pass has been scanned at the gate.</p>
+
+        <div class="rec-row">
+          <div class="step">
+            <button type="button" id="scanMinus" aria-label="Decrease scan count"><i class="bx bx-minus"></i></button>
+            <input type="number" id="f_scans" name="scans" value="<%= scans %>" min="0" required aria-label="Scan count">
+            <button type="button" id="scanPlus" aria-label="Increase scan count"><i class="bx bx-plus"></i></button>
           </div>
+          <span class="st <%= stClass %>" id="scanStatus" aria-live="polite"><%= status %></span>
+          <button type="button" class="link-btn" id="scanReset">Reset to 0</button>
         </div>
 
-        <!-- Card Number Mapping Field -->
-        <div class="mb-3">
-          <label class="form-label small fw-bold text-secondary">Card Number (UID/Serial)</label>
-          <div class="input-group">
-            <span class="input-group-text bg-light text-muted border-end-0"><i class="bx bx-id-card fs-5"></i></span>
-            <input type="text" class="form-control border-start-0 bg-light font-monospace" name="card_number" value="<%= guest.card_number || '' %>" placeholder="e.g. CARD-84729">
-          </div>
-          <div class="form-text fs-7 text-muted">The physical or digital serial token linked directly to this user profile pass layout.</div>
+        <div class="note">
+          <i class="bx bx-info-circle"></i>
+          <span>Changing this number changes what the gate scanner reports for this guest. Set it to 0 to let a guest be checked in again.</span>
         </div>
+      </section>
 
-        <!-- Phone / SMS Communication Target Field -->
-        <div class="mb-3">
-          <label class="form-label small fw-bold text-secondary">Phone Number</label>
-          <div class="input-group">
-            <span class="input-group-text bg-light text-muted border-end-0"><i class="bx bx-phone fs-5"></i></span>
-            <input type="text" class="form-control border-start-0 bg-light font-monospace" name="phone" value="<%= guest.phone || '' %>" placeholder="e.g. 255712345678">
-          </div>
-          <div class="form-text fs-7 text-muted">Include country code layout format string for automated barcode SMS delivery protocols.</div>
-        </div>
-
-        <!-- Invitation Classification Group Dropdown Selection -->
-        <div class="mb-3">
-          <label class="form-label small fw-bold text-secondary">Pass/Card Classification Type</label>
-          <div class="input-group">
-            <span class="input-group-text bg-light text-muted border-end-0"><i class="bx bx-purchase-tag fs-5"></i></span>
-            <select class="form-select border-start-0 bg-light" name="type">
-              <option value="single" <%= guest.type === 'single' ? 'selected' : '' %>>Single Pass Allocation</option>
-              <option value="double" <%= guest.type === 'double' ? 'selected' : '' %>>Double Pass Allocation</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- System Security Tracking Metrics Overrides Block -->
-        <div class="mb-4 p-3 bg-light rounded-3 border">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <label class="form-label small fw-bold text-secondary mb-0">Total Registered Gate Scans</label>
-            <% if (guest.scans > 1) { %>
-              <span class="badge bg-danger text-white"><i class="bx bx-error-circle me-1"></i>Multiple Entry Warning</span>
-            <% } %>
-          </div>
-          <div class="input-group">
-            <span class="input-group-text border-end-0"><i class="bx bx-scan fs-5"></i></span>
-            <input type="number" class="form-control border-start-0 font-monospace" name="scans" value="<%= guest.scans %>" min="0" required>
-          </div>
-          <div class="form-text fs-7 text-muted mt-2 text-warning">
-            <i class="bx bx-info-circle me-0.5"></i> Adjusting this count changes live validation logs. Reduce back to 0 or 1 if reset authorization is required.
-          </div>
-        </div>
-
-        <!-- COMPONENT CTA INTERACTIVE CONTROL ACTION BAR -->
-        <div class="d-flex align-items-center justify-content-end gap-2 border-top pt-3">
-          <a href="/events/<%= event.id %>/guests" class="btn btn-light border btn-sm px-4 py-2 fw-medium">Cancel Changes</a>
-          <button type="submit" class="btn btn-delle-teal btn-sm px-4 py-2 shadow-sm d-inline-flex align-items-center gap-1">
-            <i class="bx bx-save fs-5"></i> Commit Updates
-          </button>
-        </div>
-
-      </form>
-    </div>
-
+      <div class="bar">
+        <span class="dirty" id="dirtyLabel" aria-live="polite">No changes yet</span>
+        <a href="/events/<%= event.id %>/guests" class="btn-eg quiet">Cancel</a>
+        <button type="submit" class="btn-eg primary" id="saveBtn" disabled>
+          <i class="bx bx-check fs-5" id="saveIcon"></i>
+          <span id="saveText">Save changes</span>
+          <span id="saveSpin" class="spinner-border spinner-border-sm d-none"></span>
+        </button>
+      </div>
+    </form>
   </div>
 </div>
+
+<script>
+  (function () {
+    const form = document.getElementById('editForm');
+    const saveBtn = document.getElementById('saveBtn');
+    const label = document.getElementById('dirtyLabel');
+    const scans = document.getElementById('f_scans');
+    const statusEl = document.getElementById('scanStatus');
+
+    // Snapshot of the form as loaded, ignoring the CSRF token
+    const snap = () => JSON.stringify([...new FormData(form).entries()].filter(([k]) => k !== '_csrf'));
+    const initial = snap();
+    let submitting = false;
+
+    function refresh() {
+      const n = Math.max(0, parseInt(scans.value, 10) || 0);
+      statusEl.className = 'st ' + (n === 0 ? 'none' : n === 1 ? 'in' : 'dup');
+      statusEl.textContent = n === 0 ? 'Not arrived yet' : n === 1 ? 'Checked in' : 'Scanned ' + n + ' times';
+
+      const dirty = snap() !== initial;
+      saveBtn.disabled = !dirty;
+      label.classList.toggle('on', dirty);
+      label.textContent = dirty ? 'Unsaved changes' : 'No changes yet';
+    }
+
+    const setScans = v => { scans.value = Math.max(0, v); refresh(); };
+    document.getElementById('scanMinus').addEventListener('click', () => setScans((parseInt(scans.value, 10) || 0) - 1));
+    document.getElementById('scanPlus').addEventListener('click', () => setScans((parseInt(scans.value, 10) || 0) + 1));
+    document.getElementById('scanReset').addEventListener('click', () => setScans(0));
+
+    form.addEventListener('input', refresh);
+    form.addEventListener('change', refresh);
+
+    form.addEventListener('submit', () => {
+      submitting = true;
+      saveBtn.disabled = true;
+      document.getElementById('saveText').textContent = 'Saving…';
+      document.getElementById('saveIcon').classList.add('d-none');
+      document.getElementById('saveSpin').classList.remove('d-none');
+    });
+
+    // Warn before leaving with unsaved edits
+    window.addEventListener('beforeunload', e => {
+      if (!submitting && snap() !== initial) { e.preventDefault(); e.returnValue = ''; }
+    });
+  })();
+</script>

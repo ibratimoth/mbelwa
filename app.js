@@ -13,6 +13,7 @@ const session = require('express-session');
 const { setGlobalLocals, ensureAuthenticated } = require('./middleware/auth');
 const { enforceSessionFingerprint } = require('./middleware/sessionFingerprint');
 const { autoEncryptView } = require('./middleware/autoEncryptView');
+const { checkLockState } = require('./middleware/checkLock');
 
 const { sequelize } = require('./models');
 const eventRoutes = require('./routes/events');
@@ -60,6 +61,8 @@ app.use(enforceSessionFingerprint);
 
 // 4. Global View Token Injector
 app.use(autoEncryptView);
+
+app.use(checkLockState);
 
 // Static Assets & Logging
 app.use('/public', express.static(path.join(__dirname, 'public')));

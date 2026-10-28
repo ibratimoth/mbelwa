@@ -219,6 +219,165 @@
       setH(); window.addEventListener('resize', setH);
     })();
   </script>
+
+  <!-- Inactivity lock: warning modal, styles and timer (signed-in users only) -->
+<% if (signedIn) { %>
+<style>
+  .modal-backdrop { --bs-backdrop-bg: #073a4a; --bs-backdrop-opacity: .62; }
+  .modal-backdrop.show { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+
+  .idle-modal .modal-dialog { max-width: 400px; }
+  .idle-modal .modal-content { border: 0; border-radius: 24px; overflow: hidden; box-shadow: 0 30px 80px rgba(7, 58, 74, .35); }
+  .idle-body { padding: 2rem 1.75rem 1.6rem; text-align: center; position: relative; }
+  .idle-body::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 5px; background: linear-gradient(90deg, var(--delle-teal-deep), var(--delle-teal), var(--delle-gold)); }
+
+  .idle-tag { display: inline-flex; align-items: center; gap: .35rem; background: var(--delle-gold-soft); color: #8a5f00; font-size: .78rem; font-weight: 600; padding: .25rem .75rem; border-radius: 999px; margin-bottom: 1.2rem; }
+
+  .idle-ring { position: relative; width: 132px; height: 132px; margin: 0 auto 1.3rem; }
+  .idle-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .idle-ring .track { stroke: var(--delle-teal-soft); }
+  .idle-ring .arc { stroke: url(#idleGrad); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .idle-num { position: absolute; inset: 0; display: grid; place-content: center; }
+  .idle-num b { font-size: 2.7rem; line-height: 1; font-weight: 700; color: var(--delle-teal-deep); font-variant-numeric: tabular-nums; transition: color .2s; }
+  .idle-num span { font-size: .78rem; color: var(--delle-muted); margin-top: .2rem; }
+  .idle-ring.urgent .arc { stroke: #c2255c; }
+  .idle-ring.urgent .idle-num b { color: #c2255c; }
+
+  .idle-body h2 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; letter-spacing: -.01em; font-size: 1.5rem; margin: 0 0 .5rem; color: var(--delle-teal-deep); }
+  .idle-body p { color: var(--delle-muted); font-size: .92rem; line-height: 1.55; margin: 0 0 1.5rem; }
+
+  .idle-primary { width: 100%; height: 50px; border: 0; border-radius: 12px; background: var(--delle-teal); color: #fff; font-weight: 700; font-size: .98rem; transition: background .15s, box-shadow .15s; }
+  .idle-primary:hover { background: var(--delle-teal-hover); box-shadow: 0 8px 20px rgba(14, 105, 123, .28); }
+  .idle-link { margin-top: .5rem; width: 100%; height: 44px; border: 0; background: transparent; color: var(--delle-muted); font-weight: 600; font-size: .9rem; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; }
+  .idle-link:hover { background: var(--delle-teal-soft); color: var(--delle-teal); }
+  .idle-link:disabled, .idle-primary:disabled { opacity: .6; cursor: progress; }
+
+  @media (prefers-reduced-motion: reduce) { .idle-ring .arc, .idle-num b { transition: none; } }
+</style>
+
+<!-- Inactivity warning -->
+<div class="modal fade idle-modal" id="inactivityModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+  role="alertdialog" aria-modal="true" aria-labelledby="idleTitle" aria-describedby="idleDesc" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="idle-body">
+        <span class="idle-tag"><i class="bx bx-lock-alt"></i> Session security</span>
+
+        <div class="idle-ring" id="idleRing" aria-hidden="true">
+          <svg viewBox="0 0 120 120">
+            <defs>
+              <linearGradient id="idleGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#0e697b" />
+                <stop offset="1" stop-color="#e5a000" />
+              </linearGradient>
+            </defs>
+            <circle class="track" cx="60" cy="60" r="52" fill="none" stroke-width="8" />
+            <circle class="arc" id="idleArc" cx="60" cy="60" r="52" fill="none" stroke-width="8" />
+          </svg>
+          <div class="idle-num"><b id="countdownTimer">10</b><span>seconds</span></div>
+        </div>
+
+        <h2 id="idleTitle">Are you still there?</h2>
+        <p id="idleDesc">You have been inactive for a while. To keep your guest list and invitations safe, we will lock your session when the timer ends.</p>
+
+        <button type="button" id="stayInBtn" class="idle-primary">Stay signed in</button>
+        <button type="button" id="lockNowBtn" class="idle-link"><i class="bx bx-lock-alt"></i> Lock now</button>
+
+        <div class="visually-hidden" id="idleLive" aria-live="assertive"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    /* ---- Settings ---- */
+    const IDLE_MINUTES = 2;     // inactivity before the warning appears
+    const WARN_SECONDS = 10;    // length of the countdown
+
+    const $ = id => document.getElementById(id);
+    const modalEl = $('inactivityModal');
+    const modal = new bootstrap.Modal(modalEl);
+    const ring = $('idleRing'), arc = $('idleArc'), num = $('countdownTimer'), live = $('idleLive');
+    const stayBtn = $('stayInBtn'), lockBtn = $('lockNowBtn');
+    const CIRC = 2 * Math.PI * 52;
+    arc.style.strokeDasharray = CIRC;
+    arc.style.strokeDashoffset = 0;
+
+    let lastActivity = Date.now();
+    let warnDeadline = null;     // null = no warning showing
+    let locking = false;
+
+    /* Activity only counts while no warning is showing. Once the countdown has started,
+       moving the mouse must not silently cancel it: the person has to press a button. */
+    const bump = () => { if (warnDeadline === null) lastActivity = Date.now(); };
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(name =>
+      window.addEventListener(name, bump, { passive: true }));
+
+    function paint(sec) {
+      num.textContent = sec;
+      arc.style.strokeDashoffset = CIRC * (1 - sec / WARN_SECONDS);
+      ring.classList.toggle('urgent', sec <= 5);
+      if (sec === WARN_SECONDS || sec === 5) live.textContent = 'Your session will lock in ' + sec + ' seconds.';
+    }
+
+    async function lockSession() {
+      if (locking) return;
+      locking = true;
+      stayBtn.disabled = lockBtn.disabled = true;
+      try {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+        await fetch('/api/session/lock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+          body: JSON.stringify({
+              // Captures exact route + query params (e.g., "/events/12/guests?page=2")
+              returnTo: window.location.pathname + window.location.search
+            }),
+          keepalive: true
+        });
+      } catch (err) {
+        console.error('Failed to notify server of lock state:', err);
+      }
+      window.location.href = '/lock';
+    }
+
+    function stay() {
+      warnDeadline = null;
+      lastActivity = Date.now();
+      modal.hide();
+      fetch('/api/csrf-token').catch(() => {});   // keep the session alive
+    }
+
+    /* One clock, based on timestamps. It stays correct when the browser throttles
+       background tabs or the laptop sleeps, unlike counting down with setInterval. */
+    function tick() {
+      if (locking) return;
+      const now = Date.now();
+
+      if (warnDeadline === null) {
+        if (now - lastActivity >= IDLE_MINUTES * 60 * 1000) {
+          warnDeadline = now + WARN_SECONDS * 1000;
+          paint(WARN_SECONDS);
+          modal.show();
+        }
+        return;
+      }
+
+      const sec = Math.ceil((warnDeadline - now) / 1000);
+      if (sec <= 0) return lockSession();
+      paint(sec);
+    }
+
+    stayBtn.addEventListener('click', stay);
+    lockBtn.addEventListener('click', lockSession);
+    modalEl.addEventListener('shown.bs.modal', () => stayBtn.focus());
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+    setInterval(tick, 1000);
+  })();
+</script>
+<% } %>
+
 </body>
 
 </html>

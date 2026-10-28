@@ -1,339 +1,261 @@
 <% layout('layouts/main', { event: event }) -%>
+<%
+  const up = s => (s || '').toString().toUpperCase();
+  const scansOf = g => Number(g.scans) || 0;
+  const total   = guests.length;
+  const nSingle = guests.filter(g => up(g.type).includes('SINGLE')).length;
+  const nDouble = guests.filter(g => up(g.type).includes('DOUBLE')).length;
+  const nArrived = guests.filter(g => scansOf(g) >= 1).length;
+  const nDup    = guests.filter(g => scansOf(g) > 1).length;
+  const nPending = total - nArrived;
+%>
 
 <style>
-  :root {
-    --delle-teal: #0e697b;
-    --delle-teal-hover: #0a5160;
-    --delle-teal-soft: rgba(14, 105, 123, 0.08);
-    --delle-gold: #e5a000;
-    --delle-gold-soft: rgba(229, 160, 0, 0.12);
-    --delle-border: rgba(0, 0, 0, 0.06);
-  }
+  .gd { --teal: var(--delle-teal, #0e697b); --teal-deep: var(--delle-teal-deep, #073a4a); --gold: var(--delle-gold, #e5a000);
+        --ink: var(--delle-dark, #0f2530); --muted: var(--delle-muted, #5d7079); --line: var(--delle-border, rgba(15,37,48,.1));
+        --soft: var(--delle-teal-soft, rgba(14,105,123,.08)); --wash: #f4f7f8; --ok: #198754; --bad: #c2255c; }
+  .gd .serif { font-family: 'Fraunces', Georgia, serif; font-weight: 600; letter-spacing: -.01em; }
+  .gd :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
-  /* Header Directory Workstation Card */
-  .directory-header-card {
-    background: #ffffff;
-    border: 1px solid var(--delle-border);
-    border-radius: 18px;
-    padding: 1.5rem 2rem;
-  }
+  /* Header */
+  .gd-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+  .gd-head h1 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); line-height: 1.1; margin: 0 0 .3rem; color: var(--teal-deep); }
+  .gd-head p { margin: 0; color: var(--muted); }
+  .btn-gd { display: inline-flex; align-items: center; gap: .5rem; height: 44px; padding: 0 1.2rem; border-radius: 10px; font-weight: 600; text-decoration: none; border: 1px solid transparent; transition: background .15s, box-shadow .15s; }
+  .btn-gd.primary { background: var(--teal); color: #fff; } .btn-gd.primary:hover { background: var(--delle-teal-hover, #0a5160); color: #fff; box-shadow: 0 6px 16px rgba(14,105,123,.25); }
+  .btn-gd.ghost { background: #fff; color: var(--teal); border-color: rgba(14,105,123,.3); } .btn-gd.ghost:hover { background: var(--soft); border-color: var(--teal); color: var(--teal); }
 
-  /* Filter Capsule Navigation */
-  .search-box-group {
-    background: #f8fafc;
-    border: 1px solid var(--delle-border);
-    border-radius: 12px;
-    transition: all 0.2s ease;
-  }
+  /* Summary figures */
+  .gd-sum { display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 1.5rem; }
+  .gd-sum > div { padding: .2rem 1.25rem; border-left: 1px solid var(--line); }
+  .gd-sum > div:first-child { border-left: 0; padding-left: .2rem; }
+  .gd-sum b { display: block; font-size: 1.8rem; font-weight: 700; line-height: 1.1; }
+  .gd-sum span { font-size: .82rem; color: var(--muted); }
+  .gd-sum .ok b { color: var(--ok); } .gd-sum .bad b { color: var(--bad); } .gd-sum .zero b { color: var(--muted); }
 
-  .search-box-group:focus-within {
-    border-color: var(--delle-teal);
-    box-shadow: 0 0 0 3px var(--delle-teal-soft);
-    background: #ffffff;
-  }
+  /* Toolbar */
+  .gd-bar { background: #fff; border: 1px solid var(--line); border-radius: 14px 14px 0 0; padding: .9rem 1rem; display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; }
+  .gd-search { position: relative; flex: 1 1 260px; max-width: 380px; }
+  .gd-search i.bx-search { position: absolute; left: .85rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1.15rem; }
+  .gd-search input { width: 100%; height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--wash); padding: 0 2.4rem 0 2.5rem; font-size: .92rem; transition: background .15s, border-color .15s, box-shadow .15s; }
+  .gd-search input:focus { outline: 0; background: #fff; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14,105,123,.15); }
+  .gd-search kbd { position: absolute; right: .7rem; top: 50%; transform: translateY(-50%); font-size: .72rem; color: var(--muted); background: #fff; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; pointer-events: none; }
+  .gd-search input:focus ~ kbd, .gd-search input:not(:placeholder-shown) ~ kbd { display: none; }
 
-  .filter-pill {
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding: 0.4rem 0.85rem;
-    border-radius: 10px;
-    border: 1px solid var(--delle-border);
-    background: #ffffff;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
+  .seg { display: inline-flex; background: var(--wash); border-radius: 10px; padding: 3px; gap: 2px; }
+  .seg button { border: 0; background: transparent; border-radius: 8px; padding: .42rem .8rem; font-size: .84rem; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; gap: .4rem; }
+  .seg button em { font-style: normal; font-weight: 500; font-size: .78rem; opacity: .75; }
+  .seg button[aria-pressed="true"] { background: #fff; color: var(--teal); box-shadow: 0 1px 4px rgba(15,37,48,.12); }
+  .seg button:not([aria-pressed="true"]):hover { color: var(--teal); }
+  .gd-count { margin-left: auto; font-size: .84rem; color: var(--muted); }
 
-  .filter-pill.active, .filter-pill:hover {
-    background: var(--delle-teal-soft);
-    border-color: rgba(14, 105, 123, 0.2);
-    color: var(--delle-teal);
-  }
+  /* Table */
+  .gd-table { background: #fff; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; overflow: hidden; }
+  .gd table { margin: 0; width: 100%; border-collapse: collapse; }
+  .gd thead th { background: var(--wash); font-size: .8rem; font-weight: 600; color: var(--muted); padding: .7rem 1rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  .gd tbody td { padding: .8rem 1rem; border-top: 1px solid var(--line); vertical-align: middle; }
+  .gd tbody tr:first-child td { border-top: 0; }
+  .gd tbody tr:hover { background: rgba(14,105,123,.04); }
+  .gd tbody tr.is-dup { background: rgba(194,37,92,.035); }
 
-  /* Modern Table Styling */
-  .table-container-card {
-    background: #ffffff;
-    border: 1px solid var(--delle-border);
-    border-radius: 18px;
-    overflow: hidden;
-  }
+  .who { display: flex; align-items: center; gap: .8rem; min-width: 0; }
+  .av { width: 38px; height: 38px; border-radius: 50%; background: var(--soft); color: var(--teal); font-weight: 700; display: grid; place-items: center; flex: none; }
+  .who b { display: block; font-weight: 600; font-size: .95rem; }
+  .who small { display: block; color: var(--muted); font-size: .8rem; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86rem; }
 
-  .guest-table thead {
-    background: #f8fafc;
-  }
+  .pass { display: inline-block; padding: .2rem .65rem; border-radius: 999px; font-size: .78rem; font-weight: 600; background: var(--soft); color: var(--teal); }
+  .pass.dbl { background: var(--delle-gold-soft, rgba(229,160,0,.14)); color: #8a5f00; }
 
-  .guest-table th {
-    font-size: 0.725rem;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: #64748b;
-    font-weight: 700;
-    border-bottom: 1px solid var(--delle-border);
-  }
+  .st { display: inline-flex; align-items: center; gap: .4rem; font-size: .84rem; font-weight: 600; white-space: nowrap; }
+  .st::before { content: ''; width: 9px; height: 9px; border-radius: 50%; border: 2px solid #9fb0b8; }
+  .st.in { color: var(--ok); } .st.in::before { background: var(--ok); border-color: var(--ok); }
+  .st.dup { color: var(--bad); } .st.dup::before { background: var(--bad); border-color: var(--bad); }
+  .st.none { color: var(--muted); font-weight: 500; }
 
-  .guest-table tbody tr {
-    transition: all 0.2s ease;
-  }
+  .ib { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--muted); display: inline-grid; place-items: center; font-size: 1.2rem; text-decoration: none; transition: background .15s, color .15s, border-color .15s; }
+  .ib:hover { background: var(--teal); border-color: var(--teal); color: #fff; }
 
-  .guest-table tbody tr:hover {
-    background-color: var(--delle-teal-soft) !important;
-  }
+  /* Empty states */
+  .gd-empty { display: none; text-align: center; padding: 3rem 1.5rem; border-top: 1px solid var(--line); }
+  .gd-empty.show { display: block; }
+  .gd-empty .ic { width: 60px; height: 60px; border-radius: 50%; background: var(--soft); color: var(--teal); display: grid; place-items: center; font-size: 1.8rem; margin: 0 auto .8rem; }
+  .gd-empty h2 { font-size: 1.15rem; margin: 0 0 .3rem; } .gd-empty p { color: var(--muted); margin: 0 auto 1.1rem; max-width: 380px; font-size: .92rem; }
+  .gd-blank { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 3.5rem 1.5rem; text-align: center; }
+  .gd-blank .ic { width: 72px; height: 72px; border-radius: 50%; background: var(--delle-gold-soft, rgba(229,160,0,.14)); color: #8a5f00; display: grid; place-items: center; font-size: 2.2rem; margin: 0 auto 1rem; }
+  .gd-blank h2 { font-size: 1.45rem; color: var(--teal-deep); } .gd-blank p { color: var(--muted); max-width: 420px; margin: .4rem auto 1.4rem; }
 
-  /* Avatar Circle Icon */
-  .guest-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: var(--delle-teal-soft);
-    color: var(--delle-teal);
-    font-weight: 700;
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+  @media (max-width: 767px) {
+    .gd-sum { grid-template-columns: 1fr 1fr; row-gap: 1rem; }
+    .gd-sum > div:nth-child(3) { border-left: 0; padding-left: .2rem; }
+    .gd-search { max-width: none; } .gd-count { margin-left: 0; width: 100%; }
+    .gd tbody td, .gd thead th { padding-left: .75rem; padding-right: .75rem; }
+    .gd-bar { padding: .8rem; } .seg { max-width: 100%; overflow-x: auto; }
   }
-
-  /* Scan Status Badges */
-  .scan-badge-zero {
-    background: #f1f5f9;
-    color: #64748b;
-    border: 1px solid #e2e8f0;
-  }
-
-  .scan-badge-valid {
-    background: var(--delle-teal-soft);
-    color: var(--delle-teal);
-    border: 1px solid rgba(14, 105, 123, 0.2);
-  }
-
-  .scan-badge-alert {
-    background: #fef2f2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
-    animation: pulse 2s infinite;
-  }
-
-  /* Action Icon Buttons */
-  .btn-action-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    border: 1px solid var(--delle-border);
-    background: #ffffff;
-    color: #475569;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-  }
-
-  .btn-action-icon:hover {
-    background: var(--delle-teal);
-    color: #ffffff;
-    border-color: var(--delle-teal);
-  }
-
-  .btn-delle-outline {
-    background-color: #ffffff;
-    color: var(--delle-teal);
-    border: 1px solid rgba(14, 105, 123, 0.25);
-    border-radius: 10px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-  }
-
-  .btn-delle-outline:hover {
-    background-color: var(--delle-teal-soft);
-    border-color: var(--delle-teal);
-    color: var(--delle-teal);
-  }
+  @media (prefers-reduced-motion: reduce) { .gd * { transition: none !important; } }
 </style>
 
-<!-- HEADER WORKSTATION BANNER -->
-<div class="directory-header-card shadow-sm mb-4">
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-    <div class="d-flex align-items-center gap-3">
-      <div class="p-3 rounded-3" style="background: var(--delle-teal-soft); color: var(--delle-teal);">
-        <i class="bx bx-group fs-3"></i>
-      </div>
-      <div>
-        <div class="d-flex align-items-center gap-2">
-          <h3 class="mb-0 fw-bold text-dark">Guest Directory</h3>
-          <span class="badge rounded-pill px-2.5 py-1 text-xs fw-semibold" style="background-color: var(--delle-teal-soft); color: var(--delle-teal);">
-            <%= guests.length %> Registered
-          </span>
-        </div>
-        <p class="text-muted small mb-0"><%= event.title %></p>
-      </div>
+<div class="gd">
+
+  <header class="gd-head">
+    <div>
+      <h1 class="serif">Guests</h1>
+      <p><%= event.title %></p>
+    </div>
+    <a href="/events/<%= event.id %>/guests/upload" class="btn-gd <%= total === 0 ? 'primary' : 'ghost' %>">
+      <i class="bx bx-cloud-upload fs-5"></i> Import guests
+    </a>
+  </header>
+
+  <% if (total === 0) { %>
+    <section class="gd-blank">
+      <div class="ic"><i class="bx bx-user-plus"></i></div>
+      <h2 class="serif">No guests yet</h2>
+      <p>Import your guest list from a CSV file. Each guest gets a personal invitation with their own entry code.</p>
+      <a href="/events/<%= event.id %>/guests/upload" class="btn-gd primary"><i class="bx bx-cloud-upload fs-5"></i> Import guests</a>
+    </section>
+  <% } else { %>
+
+  <section class="gd-sum" aria-label="Guest summary">
+    <div><b><%= total %></b><span>Guests</span></div>
+    <div><b><%= nSingle %><small class="text-muted fw-normal fs-5"> / <%= nDouble %></small></b><span>Single / double passes</span></div>
+    <div class="ok"><b><%= nArrived %></b><span>Checked in</span></div>
+    <div class="<%= nDup > 0 ? 'bad' : 'zero' %>"><b><%= nDup %></b><span>Duplicate scans</span></div>
+  </section>
+
+  <!-- Toolbar -->
+  <div class="gd-bar">
+    <div class="gd-search">
+      <i class="bx bx-search"></i>
+      <input type="text" id="searchInput" placeholder="Search name, phone or card number" aria-label="Search guests" autocomplete="off">
+      <kbd>/</kbd>
     </div>
 
-    <div class="d-flex align-items-center gap-2">
-      <a href="/events/<%= event.id %>/guests/upload" class="btn btn-delle-outline px-3.5 py-2 d-inline-flex align-items-center gap-2">
-        <i class="bx bx-cloud-upload fs-5"></i>
-        <span>Import CSV List</span>
-      </a>
+    <div class="seg" role="group" aria-label="Filter by pass type" id="typeSeg">
+      <button type="button" data-type="ALL" aria-pressed="true">All <em><%= total %></em></button>
+      <button type="button" data-type="SINGLE" aria-pressed="false">Single <em><%= nSingle %></em></button>
+      <button type="button" data-type="DOUBLE" aria-pressed="false">Double <em><%= nDouble %></em></button>
     </div>
+
+    <div class="seg" role="group" aria-label="Filter by check-in status" id="statusSeg">
+      <button type="button" data-status="all" aria-pressed="true">Any status</button>
+      <button type="button" data-status="pending" aria-pressed="false">Not arrived <em><%= nPending %></em></button>
+      <button type="button" data-status="arrived" aria-pressed="false">Arrived <em><%= nArrived %></em></button>
+      <button type="button" data-status="dup" aria-pressed="false">Duplicates <em><%= nDup %></em></button>
+    </div>
+
+    <div class="gd-count" id="resultCount" aria-live="polite">Showing <%= total %> of <%= total %></div>
   </div>
-</div>
 
-<!-- FILTER & CONTROL BAR -->
-<div class="card border-0 bg-white shadow-sm p-3 mb-4" style="border-radius: 16px;">
-  <div class="row align-items-center g-3">
-    
-    <!-- Search Field -->
-    <div class="col-md-5 col-lg-4">
-      <div class="search-box-group input-group">
-        <span class="input-group-text bg-transparent border-0 text-muted"><i class="bx bx-search fs-5"></i></span>
-        <input type="text" id="searchInput" class="form-control bg-transparent border-0 ps-0" placeholder="Search name, phone, card #...">
-      </div>
-    </div>
-
-    <!-- Quick Pass Type Filter Pills -->
-    <div class="col-md-7 col-lg-8 d-flex flex-wrap align-items-center justify-content-md-end gap-2">
-      <span class="filter-pill active" onclick="filterType('ALL')">All Passes</span>
-      <span class="filter-pill" onclick="filterType('SINGLE')">Single</span>
-      <span class="filter-pill" onclick="filterType('DOUBLE')">Double / VIP</span>
-    </div>
-
-  </div>
-</div>
-
-<!-- GUEST DIRECTORY TABLE CONTAINER -->
-<div class="table-container-card shadow-sm mb-5">
-  <div class="table-responsive">
-    <table class="table guest-table align-middle mb-0">
-      <thead>
-        <tr>
-          <th class="py-3.5 ps-4" style="width: 65px;">#</th>
-          <th class="py-3.5">Guest Info</th>
-          <th class="py-3.5" style="width: 140px;">Pass Type</th>
-          <th class="py-3.5">Phone Number</th>
-          <th class="py-3.5">Card Number</th>
-          <th class="py-3.5 text-center" style="width: 110px;">Check-ins</th>
-          <th class="py-3.5 text-end pe-4" style="width: 120px;">Actions</th>
-        </tr>
-      </thead>
-
-      <tbody id="attendeesTable">
-        <% guests.forEach((g, i) => { %>
-          <tr class="align-middle guest-row" data-pass-type="<%= (g.type || '').toUpperCase() %>">
-            
-            <!-- Serial # -->
-            <td class="sn-col py-3 ps-4 text-muted fw-medium fs-7"><%= i + 1 %></td>
-            
-            <!-- Guest Profile Info (Avatar + Name) -->
-            <td class="py-3">
-              <div class="d-flex align-items-center gap-2.5">
-                <div class="guest-avatar">
-                  <%= g.name ? g.name.charAt(0).toUpperCase() : 'G' %>
-                </div>
-                <div>
-                  <div class="fw-bold text-dark fs-6 mb-0"><%= g.name %></div>
-                </div>
-              </div>
-            </td>
-            
-            <!-- Pass Type Tag -->
-            <td class="py-3">
-              <span class="badge rounded-pill px-2.5 py-1.5 fw-semibold bg-light text-secondary border">
-                <%= g.type %>
-              </span>
-            </td>
-            
-            <!-- Phone Number -->
-            <td class="py-3 font-monospace text-secondary fs-7"><%= g.phone || '—' %></td>
-            
-            <!-- Card Number -->
-            <td class="py-3 font-monospace fw-semibold text-dark fs-7"><%= g.card_number || '—' %></td>
-            
-            <!-- Contextual Scan Counter Badge -->
-            <td class="py-3 text-center">
-              <% if (g.scans === 0) { %>
-                <span class="badge rounded-pill px-2.5 py-1.5 scan-badge-zero fs-8 fw-bold"><%= g.scans %></span>
-              <% } else if (g.scans === 1) { %>
-                <span class="badge rounded-pill px-2.5 py-1.5 scan-badge-valid fs-8 fw-bold"><%= g.scans %> Pass</span>
-              <% } else { %>
-                <span class="badge rounded-pill px-2.5 py-1.5 scan-badge-alert fs-8 fw-bold" title="Warning: Duplicate entry detected!">
-                  <i class="bx bx-error-circle me-1 align-middle"></i><%= g.scans %>
-                </span>
-              <% } %>
-            </td>
-
-            <!-- Action Controls -->
-            <td class="py-3 text-end pe-4">
-              <div class="d-inline-flex gap-1.5">
-                <a href="/events/<%= event.id %>/guests/<%= g.id %>/edit" class="btn-action-icon" title="Edit Guest Details">
-                  <i class="bx bx-edit fs-6"></i>
-                </a>
-
-                <a href="/events/<%= event.id %>/guests/<%= g.id %>/download" class="btn-action-icon" style="color: #16a34a;" title="Download Digital Pass Graphic">
-                  <i class="bx bx-download fs-6"></i>
-                </a>
-              </div>
-            </td>
-
+  <!-- Table -->
+  <div class="gd-table">
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Guest</th>
+            <th class="d-none d-md-table-cell">Pass</th>
+            <th class="d-none d-lg-table-cell">Phone</th>
+            <th class="d-none d-lg-table-cell">Card number</th>
+            <th>Status</th>
+            <th class="text-end"><span class="visually-hidden">Actions</span></th>
           </tr>
-        <% }) %>
-      </tbody>
-    </table>
+        </thead>
+        <tbody id="attendeesTable">
+          <% guests.forEach(g => {
+               const s = scansOf(g);
+               const isDouble = up(g.type).includes('DOUBLE');
+               const status = s === 0 ? 'pending' : (s === 1 ? 'arrived' : 'arrived dup');
+               const hay = [g.name, g.phone, g.card_number, g.type].filter(Boolean).join(' ').toLowerCase();
+          %>
+            <tr class="guest-row<%= s > 1 ? ' is-dup' : '' %>" data-search="<%= hay %>" data-type="<%= up(g.type) %>" data-status="<%= status %>">
+              <td>
+                <div class="who">
+                  <div class="av" aria-hidden="true"><%= g.name ? g.name.charAt(0).toUpperCase() : 'G' %></div>
+                  <div>
+                    <b><%= g.name %></b>
+                    <small class="d-lg-none">
+                      <%= [g.type, g.phone, g.card_number].filter(Boolean).join(' · ') %>
+                    </small>
+                  </div>
+                </div>
+              </td>
+              <td class="d-none d-md-table-cell"><span class="pass<%= isDouble ? ' dbl' : '' %>"><%= g.type || '—' %></span></td>
+              <td class="d-none d-lg-table-cell mono text-secondary"><%= g.phone || '—' %></td>
+              <td class="d-none d-lg-table-cell mono fw-semibold"><%= g.card_number || '—' %></td>
+              <td>
+                <% if (s === 0) { %>
+                  <span class="st none">Not arrived</span>
+                <% } else if (s === 1) { %>
+                  <span class="st in">Checked in</span>
+                <% } else { %>
+                  <span class="st dup" title="This pass was scanned <%= s %> times"><%= s %> scans</span>
+                <% } %>
+              </td>
+              <td class="text-end">
+                <div class="d-inline-flex gap-2">
+                  <a href="/events/<%= event.id %>/guests/<%= g.id %>/edit" class="ib" title="Edit guest" aria-label="Edit <%= g.name %>"><i class="bx bx-edit-alt"></i></a>
+                  <a href="/events/<%= event.id %>/guests/<%= g.id %>/download" class="ib" title="Download invitation" aria-label="Download invitation for <%= g.name %>"><i class="bx bx-download"></i></a>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="noResults" class="gd-empty">
+      <div class="ic"><i class="bx bx-search-alt"></i></div>
+      <h2 class="serif">No guests found</h2>
+      <p>Nothing matches your search and filters. Try a different spelling or clear the filters.</p>
+      <button type="button" class="btn-gd ghost" id="clearFilters">Clear filters</button>
+    </div>
   </div>
 
-  <!-- Empty Search Results Placeholder -->
-  <div id="noResults" class="text-center py-5 bg-white d-none border-top">
-    <div class="p-3 rounded-circle d-inline-flex mb-2" style="background: var(--delle-teal-soft); color: var(--delle-teal);">
-      <i class="bx bx-user-x fs-1"></i>
-    </div>
-    <h6 class="fw-bold text-dark mb-1">No Guest Records Found</h6>
-    <p class="text-muted small mb-0">No attendee records match your active search or type filter parameters.</p>
-  </div>
+  <% } %>
 </div>
 
-<!-- CLIENT SEARCH & PASS FILTER SCRIPT -->
 <script>
-  let activeTypeFilter = 'ALL';
+  (function () {
+    const input = document.getElementById('searchInput');
+    if (!input) return;
 
-  // Live Text Search Input Driver
-  document.getElementById('searchInput').addEventListener('keyup', filterRows);
+    const rows = [...document.querySelectorAll('#attendeesTable tr.guest-row')];
+    const state = { q: '', type: 'ALL', status: 'all' };
 
-  // Quick Pass Type Pill Filter
-  function filterType(type) {
-    activeTypeFilter = type;
-    
-    // Toggle active pill UI styling
-    document.querySelectorAll('.filter-pill').forEach(pill => {
-      if (pill.innerText.toUpperCase().includes(type) || (type === 'ALL' && pill.innerText.includes('All'))) {
-        pill.classList.add('active');
-      } else {
-        pill.classList.remove('active');
-      }
+    function apply() {
+      let shown = 0;
+      rows.forEach(r => {
+        const ok = (!state.q || r.dataset.search.includes(state.q))
+          && (state.type === 'ALL' || r.dataset.type.includes(state.type))
+          && (state.status === 'all' || r.dataset.status.split(' ').includes(state.status));
+        r.style.display = ok ? '' : 'none';
+        if (ok) shown++;
+      });
+      document.getElementById('noResults').classList.toggle('show', shown === 0);
+      document.getElementById('resultCount').textContent = 'Showing ' + shown + ' of ' + rows.length;
+    }
+
+    function press(group, btn) {
+      group.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === btn));
+    }
+
+    input.addEventListener('input', () => { state.q = input.value.trim().toLowerCase(); apply(); });
+
+    const typeSeg = document.getElementById('typeSeg'), statusSeg = document.getElementById('statusSeg');
+    typeSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.type = b.dataset.type; press(typeSeg, b); apply(); });
+    statusSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.status = b.dataset.status; press(statusSeg, b); apply(); });
+
+    document.getElementById('clearFilters').addEventListener('click', () => {
+      input.value = ''; state.q = ''; state.type = 'ALL'; state.status = 'all';
+      press(typeSeg, typeSeg.querySelector('[data-type="ALL"]'));
+      press(statusSeg, statusSeg.querySelector('[data-status="all"]'));
+      apply(); input.focus();
     });
 
-    filterRows();
-  }
-
-  function filterRows() {
-    const term = document.getElementById('searchInput').value.toLowerCase();
-    const rows = document.querySelectorAll('#attendeesTable tr.guest-row');
-    const noResults = document.getElementById('noResults');
-
-    let visibleCount = 0;
-
-    rows.forEach(row => {
-      const text = row.innerText.toLowerCase();
-      const passType = row.getAttribute('data-pass-type') || '';
-      
-      const matchesText = text.includes(term);
-      const matchesType = (activeTypeFilter === 'ALL') || passType.includes(activeTypeFilter);
-
-      if (matchesText && matchesType) {
-        row.style.display = '';
-        visibleCount++;
-      } else {
-        row.style.display = 'none';
-      }
+    // Press "/" anywhere to jump to search
+    document.addEventListener('keydown', e => {
+      if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); input.focus(); }
     });
-
-    noResults.classList.toggle('d-none', visibleCount > 0);
-  }
+  })();
 </script>

@@ -1,383 +1,853 @@
 <% layout('layouts/main', { event: event }) -%>
 
-<style>
-  :root {
-    --delle-teal: #0e697b;
-    --delle-teal-hover: #0a5160;
-    --delle-teal-soft: rgba(14, 105, 123, 0.08);
-    --delle-gold: #e5a000;
-    --delle-gold-hover: #c48c17;
-    --delle-gold-soft: rgba(229, 160, 0, 0.12);
-    --delle-border: rgba(0, 0, 0, 0.08);
-  }
-
-  /* Workstation Card Shells */
-  .import-card {
-    background: #ffffff;
-    border: 1px solid var(--delle-border);
-    border-radius: 18px;
-    overflow: hidden;
-  }
-
-  /* Interactive Dropzone UI */
-  .dropzone-box {
-    border: 2px dashed rgba(14, 105, 123, 0.25);
-    background: var(--delle-teal-soft);
-    border-radius: 16px;
-    padding: 2rem 1.5rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    position: relative;
-  }
-
-  .dropzone-box:hover, .dropzone-box.dragover {
-    border-color: var(--delle-teal);
-    background: rgba(14, 105, 123, 0.12);
-    transform: translateY(-2px);
-  }
-
-  .dropzone-icon {
-    width: 54px;
-    height: 54px;
-    border-radius: 14px;
-    background: #ffffff;
-    color: var(--delle-teal);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.75rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }
-
-  /* Code Format Snippet */
-  .code-spec-box {
-    background: #0f172a;
-    color: #e2e8f0;
-    border-radius: 12px;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 0.8rem;
-  }
-
-  /* Buttons bound to Brand Palette */
-  .btn-delle-teal {
-    background-color: var(--delle-teal);
-    color: #ffffff;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-  }
-
-  .btn-delle-teal:hover {
-    background-color: var(--delle-teal-hover);
-    color: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(14, 105, 123, 0.25);
-  }
-
-  .btn-delle-gold {
-    background-color: var(--delle-gold);
-    color: #ffffff;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-  }
-
-  .btn-delle-gold:hover {
-    background-color: var(--delle-gold-hover);
-    color: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(229, 160, 0, 0.25);
-  }
-
-  .btn-delle-outline {
-    background-color: #ffffff;
-    color: var(--delle-teal);
-    border: 1px solid rgba(14, 105, 123, 0.25);
-    border-radius: 10px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-  }
-
-  .btn-delle-outline:hover {
-    background-color: var(--delle-teal-soft);
-    border-color: var(--delle-teal);
-    color: var(--delle-teal);
-  }
-
-  /* Preview Table Custom Scrollbar */
-  .preview-scroll-area {
-    max-height: 380px;
-    overflow-y: auto;
-  }
-</style>
-
-<!-- HEADER WORKSTATION BANNER -->
-<div class="import-card p-4 shadow-sm mb-4">
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-    <div class="d-flex align-items-center gap-3">
-      <div class="p-3 rounded-3" style="background: var(--delle-teal-soft); color: var(--delle-teal);">
-        <i class="bx bx-cloud-upload fs-3"></i>
-      </div>
-      <div>
-        <h3 class="mb-0 fw-bold text-dark">Batch Guest Import Workstation</h3>
-        <p class="text-muted small mb-0"><%= event.title %></p>
-      </div>
-    </div>
-
-    <a href="/events/<%= event.id %>/guests" class="btn btn-delle-outline px-3.5 py-2 d-inline-flex align-items-center gap-2">
-      <i class="bx bx-arrow-back fs-5"></i>
-      <span>Back to Directory</span>
-    </a>
-  </div>
-</div>
-
-<div class="row g-4 mb-5">
-
-  <!-- LEFT COLUMN: FILE DROPZONE & FORMATTING GUIDELINES -->
-  <div class="col-lg-5">
-    
-    <!-- Upload Controller Form Card -->
-    <div class="import-card p-4 shadow-sm mb-4">
-      <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
-        <i class="bx bx-file text-secondary fs-5"></i> Select CSV Data File
-      </h6>
-      
-      <form action="/events/<%= event.id %>/guests/upload" method="post" enctype="multipart/form-data" id="uploadForm">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-
-        <!-- Visual Dropzone -->
-        <div class="dropzone-box mb-3" id="dropzone">
-          <div class="dropzone-icon mb-2">
-            <i class="bx bx-spreadsheet"></i>
-          </div>
-          <h6 class="fw-bold text-dark mb-1">Drag and drop CSV file here</h6>
-          <p class="text-muted small mb-3">or click to browse local storage</p>
-          <span class="badge rounded-pill bg-light text-dark border px-3 py-1.5 fs-8">Supports .CSV files</span>
-          
-          <input type="file" name="csvfile" id="csvFileInput" class="d-none" accept=".csv" required>
-        </div>
-
-        <!-- Selected File Status Badge -->
-        <div id="fileSelectedBadge" class="alert alert-success d-none py-2 px-3 mb-3 d-flex align-items-center justify-content-between rounded-3">
-          <span class="small fw-semibold text-truncate me-2" id="fileNameText">selected_file.csv</span>
-          <i class="bx bx-check-circle fs-5 flex-shrink-0"></i>
-        </div>
-
-        <div class="d-flex gap-2 pt-2">
-          <a href="/events/<%= event.id %>" class="btn btn-light border btn-sm px-3.5 py-2 fw-semibold rounded-3 text-secondary">Cancel</a>
-          <button type="submit" class="btn btn-delle-teal btn-sm px-4 py-2 w-100 shadow-sm d-inline-flex align-items-center justify-content-center gap-2">
-            <i class="bx bx-upload fs-5"></i>
-            <span>Execute Import</span>
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Requirements & Template Card -->
-    <div class="import-card p-4 shadow-sm">
-      <div class="d-flex align-items-center gap-2 mb-3">
-        <i class="bx bx-info-circle fs-5" style="color: var(--delle-teal);"></i>
-        <h6 class="fw-bold text-dark mb-0">CSV Formatting Specification</h6>
-      </div>
-
-      <p class="text-muted small mb-2">
-        Headers must follow these precise lowercase field names:
-      </p>
-
-      <!-- Code Block Format -->
-      <div class="code-spec-box p-3 mb-3 shadow-2xs">
-        <div class="text-warning mb-1">name,type,phone</div>
-        <div class="text-white-50">John Doe,Single,712345678</div>
-        <div class="text-white-50">Jane Smith,Double,787654321</div>
-      </div>
-
-      <button type="button" class="btn btn-delle-gold btn-sm w-100 py-2.5 d-inline-flex align-items-center justify-content-center gap-2 mb-3" onclick="downloadSampleCSV()">
-        <i class="bx bx-download fs-5"></i>
-        <span>Download Sample CSV Template</span>
-      </button>
-
-      <div class="p-2.5 rounded-3 bg-warning-subtle text-warning-emphasis small border border-warning-subtle">
-        <i class="bx bx-error-circle me-1 align-middle"></i>
-        <strong>Phone Format Note:</strong> Omit country codes (e.g., <code>255</code>) and leading zeroes (e.g., <code>0712...</code>) for reliable SMS delivery.
-      </div>
-    </div>
-
-  </div>
-
-  <!-- RIGHT COLUMN: DYNAMIC DATA PREVIEW CANVAS -->
-  <div class="col-lg-7">
-    <div class="import-card p-4 shadow-sm h-100 d-flex flex-column">
-      
-      <div class="mb-3 pb-3 border-bottom d-flex justify-content-between align-items-center">
-        <div>
-          <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-            <i class="bx bx-table text-secondary fs-5"></i> Staging Canvas
-          </h6>
-          <span class="text-muted small" id="previewStatus">No data staged for ingestion</span>
-        </div>
-        <div id="previewBadge" class="badge rounded-pill bg-light text-muted border px-3 py-1.5">
-          0 Rows
-        </div>
-      </div>
-
-      <!-- Dynamic Data Table Canvas -->
-      <div class="preview-scroll-area flex-grow-1" id="previewContainer" style="display: none;">
-        <table class="table table-hover align-middle border small mb-0">
-          <thead class="table-light sticky-top">
-            <tr>
-              <th scope="col" class="py-2.5 text-secondary fw-bold" style="width: 50px;">#</th>
-              <th scope="col" class="py-2.5 text-secondary fw-bold">Guest Name</th>
-              <th scope="col" class="py-2.5 text-secondary fw-bold">Pass Type</th>
-              <th scope="col" class="py-2.5 text-secondary fw-bold">Phone Number</th>
-            </tr>
-          </thead>
-          <tbody id="previewTableBody">
-            <!-- Dynamic Parsed Rows Insert Here -->
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Empty Visual State Backdrop -->
-      <div id="previewPlaceholder" class="d-flex flex-column align-items-center justify-content-center text-center py-5 flex-grow-1 bg-light rounded-3 border border-dashed">
-        <div class="p-3 rounded-circle bg-white shadow-2xs mb-2" style="color: var(--delle-teal);">
-          <i class="bx bx-spreadsheet fs-1"></i>
-        </div>
-        <h6 class="fw-bold text-dark mb-1">Staging Area Ready</h6>
-        <p class="text-muted small mb-0 px-4">Select or drop a valid <code>.csv</code> file to review structured record rows before processing.</p>
-      </div>
-
-    </div>
-  </div>
-
-</div>
-
-<!-- PREVIEW & TEMPLATE DOWNLOAD ENGINE -->
-<script>
-  const dropzone = document.getElementById('dropzone');
-  const fileInput = document.getElementById('csvFileInput');
-  const fileBadge = document.getElementById('fileSelectedBadge');
-  const fileNameText = document.getElementById('fileNameText');
-
-  // Trigger file input on dropzone click
-  dropzone.addEventListener('click', () => fileInput.click());
-
-  // Drag and drop event handling
-  ['dragenter', 'dragover'].forEach(eventName => {
-    dropzone.addEventListener(eventName, (e) => {
-      e.preventDefault();
-      dropzone.classList.add('dragover');
-    }, false);
-  });
-
-  ['dragleave', 'drop'].forEach(eventName => {
-    dropzone.addEventListener(eventName, (e) => {
-      e.preventDefault();
-      dropzone.classList.remove('dragover');
-    }, false);
-  });
-
-  dropzone.addEventListener('drop', (e) => {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    if (files.length) {
-      fileInput.files = files;
-      handleFile(files[0]);
+  <style>
+    .ig {
+      --teal: var(--delle-teal, #0e697b);
+      --teal-deep: var(--delle-teal-deep, #073a4a);
+      --gold: var(--delle-gold, #e5a000);
+      --ink: var(--delle-dark, #0f2530);
+      --muted: var(--delle-muted, #5d7079);
+      --line: var(--delle-border, rgba(15, 37, 48, .1));
+      --soft: var(--delle-teal-soft, rgba(14, 105, 123, .08));
+      --wash: #f4f7f8;
+      --ok: #198754;
+      --bad: #c2255c;
+      --warn: #8a5f00;
     }
-  });
 
-  fileInput.addEventListener('change', function(e) {
-    if (e.target.files.length) {
-      handleFile(e.target.files[0]);
+    .ig .serif {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 600;
+      letter-spacing: -.01em;
     }
-  });
 
-  function handleFile(file) {
-    fileNameText.innerText = file.name;
-    fileBadge.classList.remove('d-none');
+    .ig :focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 2px;
+    }
 
-    const container = document.getElementById('previewContainer');
-    const placeholder = document.getElementById('previewPlaceholder');
-    const tableBody = document.getElementById('previewTableBody');
-    const statusText = document.getElementById('previewStatus');
-    const previewBadge = document.getElementById('previewBadge');
+    .ig [hidden] {
+      display: none !important;
+    }
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const text = e.target.result;
-      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
-      
-      tableBody.innerHTML = '';
-      let rowCount = 0;
-      
-      let startingIndex = 0;
-      if (lines.length > 0 && lines[0].toLowerCase().includes('name') && lines[0].toLowerCase().includes('phone')) {
-        startingIndex = 1;
+    .crumbs {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .88rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .crumbs a {
+      color: var(--teal);
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: .25rem;
+    }
+
+    .crumbs a:hover {
+      color: var(--teal-deep);
+      text-decoration: underline;
+    }
+
+    .ig-head h1 {
+      font-size: clamp(1.7rem, 3.4vw, 2.3rem);
+      line-height: 1.1;
+      margin: 0 0 .3rem;
+      color: var(--teal-deep);
+    }
+
+    .ig-head p {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    /* Steps */
+    .steps {
+      list-style: none;
+      display: flex;
+      gap: 0;
+      padding: 0;
+      margin: 1.5rem 0;
+      max-width: 520px;
+    }
+
+    .steps li {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--muted);
+      position: relative;
+    }
+
+    .steps li span {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #c3d0d5;
+      display: grid;
+      place-items: center;
+      font-size: .8rem;
+      flex: none;
+      background: #fff;
+      z-index: 1;
+    }
+
+    .steps li:not(:last-child)::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: #c3d0d5;
+      margin: 0 .6rem;
+    }
+
+    .steps li.cur {
+      color: var(--teal-deep);
+    }
+
+    .steps li.cur span {
+      border-color: var(--teal);
+      background: var(--teal);
+      color: #fff;
+    }
+
+    .steps li.done {
+      color: var(--teal);
+    }
+
+    .steps li.done span {
+      border-color: var(--teal);
+      background: var(--soft);
+      color: var(--teal);
+    }
+
+    .steps li.done::after {
+      background: var(--teal);
+    }
+
+    @media (max-width: 575px) {
+      .steps li {
+        font-size: 0;
+        gap: 0;
       }
 
-      for (let i = startingIndex; i < lines.length; i++) {
-        const columns = lines[i].split(',').map(col => col.replace(/^["']|["']$/g, '').trim());
-        
-        if (columns.length >= 3 || (columns.length === 1 && columns[0] !== '')) {
-          rowCount++;
-          
-          const gName = columns[0] || '<span class="text-danger italic">Missing</span>';
-          const gType = columns[1] || 'Single';
-          const gPhone = columns[2] || '—';
+      .steps li span {
+        font-size: .8rem;
+      }
+    }
 
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td class="text-muted fw-medium fs-8">${rowCount}</td>
-            <td class="fw-bold text-dark">${gName}</td>
-            <td><span class="badge rounded-pill bg-light text-dark border px-2.5 py-1">${gType}</span></td>
-            <td class="text-secondary font-monospace">${gPhone}</td>
-          `;
-          tableBody.appendChild(tr);
+    .panel {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    .panel+.panel {
+      margin-top: 1.25rem;
+    }
+
+    .panel-h {
+      padding: 1.1rem 1.4rem .2rem;
+    }
+
+    .panel-h h2 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .panel-h p {
+      color: var(--muted);
+      font-size: .85rem;
+      margin: .15rem 0 0;
+    }
+
+    .panel-b {
+      padding: 1rem 1.4rem 1.4rem;
+    }
+
+    /* Dropzone (real file input stretched over it, so keyboard and drag-drop work natively) */
+    .drop {
+      position: relative;
+      border: 2px dashed rgba(14, 105, 123, .35);
+      border-radius: 14px;
+      background: var(--soft);
+      padding: 1.6rem 1.2rem;
+      text-align: center;
+      transition: background .15s, border-color .15s;
+    }
+
+    .drop:hover,
+    .drop.over {
+      background: rgba(14, 105, 123, .12);
+      border-color: var(--teal);
+    }
+
+    .drop input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .drop:focus-within {
+      outline: 3px solid var(--gold);
+      outline-offset: 2px;
+    }
+
+    .drop .ic {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: #fff;
+      color: var(--teal);
+      display: inline-grid;
+      place-items: center;
+      font-size: 1.7rem;
+      box-shadow: 0 4px 12px rgba(7, 58, 74, .1);
+      margin-bottom: .7rem;
+    }
+
+    .drop strong {
+      display: block;
+      font-size: .98rem;
+      word-break: break-all;
+    }
+
+    .drop small {
+      color: var(--muted);
+    }
+
+    .drop.has {
+      border-style: solid;
+      background: #fff;
+      border-color: rgba(25, 135, 84, .5);
+    }
+
+    .drop.has .ic {
+      background: var(--ok);
+      color: #fff;
+    }
+
+    .drop.bad {
+      border-color: var(--bad);
+      background: rgba(194, 37, 92, .05);
+    }
+
+    .drop.bad .ic {
+      background: var(--bad);
+      color: #fff;
+    }
+
+    #dropErr {
+      color: var(--bad);
+      font-size: .85rem;
+      font-weight: 600;
+      margin-top: .6rem;
+      display: none;
+    }
+
+    /* Format guide */
+    .spec {
+      display: grid;
+      gap: .65rem;
+      margin: 0 0 1rem;
+      padding: 0;
+      list-style: none;
+    }
+
+    .spec li {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      gap: .75rem;
+      font-size: .88rem;
+      align-items: baseline;
+    }
+
+    .spec code {
+      background: var(--soft);
+      color: var(--teal-deep);
+      border-radius: 6px;
+      padding: .1rem .45rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .spec span {
+      color: var(--muted);
+    }
+
+    .spec b {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .sample {
+      background: var(--teal-deep);
+      color: rgba(255, 255, 255, .85);
+      border-radius: 12px;
+      padding: .9rem 1rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .8rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .sample .hd {
+      color: var(--gold);
+    }
+
+    .btn-ig {
+      height: 46px;
+      padding: 0 1.3rem;
+      border-radius: 10px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: background .15s, box-shadow .15s;
+    }
+
+    .btn-ig.primary {
+      background: var(--teal);
+      color: #fff;
+    }
+
+    .btn-ig.primary:hover:not(:disabled) {
+      background: var(--delle-teal-hover, #0a5160);
+      box-shadow: 0 6px 16px rgba(14, 105, 123, .25);
+    }
+
+    .btn-ig.primary:disabled {
+      background: #a9c4cb;
+      cursor: not-allowed;
+    }
+
+    .btn-ig.ghost {
+      background: #fff;
+      color: var(--teal);
+      border-color: rgba(14, 105, 123, .3);
+    }
+
+    .btn-ig.ghost:hover {
+      background: var(--soft);
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    .btn-ig.quiet {
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .btn-ig.quiet:hover {
+      background: var(--wash);
+      color: var(--ink);
+    }
+
+    /* Review panel */
+    .rv-empty {
+      text-align: center;
+      padding: 3.5rem 1.5rem;
+    }
+
+    .rv-empty .ic {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--soft);
+      color: var(--teal);
+      display: grid;
+      place-items: center;
+      font-size: 2rem;
+      margin: 0 auto .8rem;
+    }
+
+    .rv-empty h2 {
+      font-size: 1.15rem;
+    }
+
+    .rv-empty p {
+      color: var(--muted);
+      max-width: 340px;
+      margin: .3rem auto 0;
+      font-size: .9rem;
+    }
+
+    #review {
+      display: none;
+    }
+
+    .sumrow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .5rem .9rem;
+      padding: 1rem 1.4rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .pill {
+      font-size: .82rem;
+      font-weight: 600;
+      padding: .25rem .75rem;
+      border-radius: 999px;
+      background: var(--wash);
+      color: var(--ink);
+    }
+
+    .pill.ok {
+      background: rgba(25, 135, 84, .1);
+      color: var(--ok);
+    }
+
+    .pill.warn {
+      background: rgba(229, 160, 0, .16);
+      color: var(--warn);
+    }
+
+    .only {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      font-size: .84rem;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .banner {
+      margin: 1rem 1.4rem 0;
+      padding: .75rem 1rem;
+      border-radius: 10px;
+      font-size: .86rem;
+      display: none;
+      gap: .6rem;
+      background: rgba(194, 37, 92, .07);
+      color: #8c1d46;
+    }
+
+    .banner.warn {
+      background: rgba(229, 160, 0, .14);
+      color: var(--warn);
+    }
+
+    .banner i {
+      font-size: 1.2rem;
+      margin-top: 1px;
+    }
+
+    .rv-scroll {
+      max-height: 440px;
+      overflow: auto;
+    }
+
+    .rv table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+    }
+
+    .rv thead th {
+      position: sticky;
+      top: 0;
+      background: var(--wash);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: .8rem;
+      text-align: left;
+      padding: .6rem 1rem;
+      border-bottom: 1px solid var(--line);
+      z-index: 1;
+    }
+
+    .rv td {
+      padding: .6rem 1rem;
+      border-top: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .rv tr.w {
+      background: rgba(229, 160, 0, .07);
+    }
+
+    .rv tr.e {
+      background: rgba(194, 37, 92, .06);
+    }
+
+    .rv .n {
+      color: var(--muted);
+      width: 44px;
+    }
+
+    .rv .mono {
+      font-family: ui-monospace, Menlo, monospace;
+    }
+
+    .rv .why {
+      font-size: .8rem;
+      font-weight: 600;
+    }
+
+    .rv .why.w {
+      color: var(--warn);
+    }
+
+    .rv .why.e {
+      color: var(--bad);
+    }
+
+    .rv .good {
+      color: var(--ok);
+      font-size: 1.15rem;
+    }
+
+    .cap {
+      text-align: center;
+      color: var(--muted);
+      font-size: .82rem;
+      padding: .8rem;
+      border-top: 1px solid var(--line);
+    }
+
+    /* Action bar */
+    .bar {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      margin-top: 1.5rem;
+      background: rgba(255, 255, 255, .95);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: .8rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      box-shadow: 0 -6px 24px rgba(7, 58, 74, .06);
+    }
+
+    .bar .msg {
+      margin-right: auto;
+      font-size: .9rem;
+      color: var(--muted);
+    }
+
+    .bar .msg b {
+      color: var(--ink);
+    }
+
+    @media (max-width: 575px) {
+      .bar {
+        flex-wrap: wrap;
+      }
+
+      .bar .msg {
+        width: 100%;
+      }
+
+      .bar .btn-ig {
+        flex: 1;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ig * {
+        transition: none !important;
+      }
+    }
+  </style>
+
+  <div class="ig">
+
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="/events/<%= event.id %>/guests"><i class="bx bx-left-arrow-alt fs-5"></i> Guests</a>
+      <span aria-hidden="true">/</span><span>Import</span>
+    </nav>
+
+    <header class="ig-head">
+      <h1 class="serif">Import guests</h1>
+      <p>Add many guests to <%= event.title %> from a CSV file.</p>
+    </header>
+
+    <ol class="steps" aria-label="Progress">
+      <li class="cur" data-step="1"><span>1</span>Choose file</li>
+      <li data-step="2"><span>2</span>Review</li>
+      <li data-step="3"><span>3</span>Import</li>
+    </ol>
+
+    <form action="/events/<%= event.id %>/guests/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="row g-4">
+
+        <!-- Left: file + format -->
+        <div class="col-lg-5">
+          <section class="panel">
+            <div class="panel-h">
+              <h2>1. Choose your file</h2>
+              <p>A CSV exported from Excel, Google Sheets or your phone contacts.</p>
+            </div>
+            <div class="panel-b">
+              <div class="drop" id="dropzone">
+                <input type="file" name="csvfile" id="csvFileInput" accept=".csv,text/csv" required
+                  aria-label="CSV file">
+                <div class="ic" id="dropIcon"><i class="bx bx-spreadsheet"></i></div>
+                <strong id="dropTitle">Drop your CSV file here</strong>
+                <small id="dropSub">or click to browse your device</small>
+              </div>
+              <div id="dropErr" role="alert"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-h">
+              <h2>File format</h2>
+              <p>The first row must contain these lowercase headers.</p>
+            </div>
+            <div class="panel-b">
+              <ul class="spec">
+                <li><code>name</code><span><b>Required.</b> The guest's full name.</span></li>
+                <li><code>type</code><span><b>Single</b> or <b>Double</b>. Defaults to Single if empty.</span></li>
+                <li><code>phone</code><span>Digits only. <b>No country code (255) and no leading 0</b>, for reliable SMS
+                    delivery.</span></li>
+              </ul>
+              <div class="sample" aria-label="Example file">
+                <div class="hd">name,type,phone</div>
+                <div>John Doe,Single,712345678</div>
+                <div>Jane Smith,Double,787654321</div>
+              </div>
+              <button type="button" class="btn-ig ghost w-100 mt-3" id="sampleBtn"><i class="bx bx-download fs-5"></i>
+                Download sample file</button>
+            </div>
+          </section>
+        </div>
+
+        <!-- Right: review -->
+        <div class="col-lg-7">
+          <section class="panel rv h-100">
+            <div class="panel-h">
+              <h2>2. Review before importing</h2>
+              <p id="rvSub">Your guests appear here so you can check them first.</p>
+            </div>
+
+            <div class="rv-empty" id="rvEmpty">
+              <div class="ic"><i class="bx bx-table"></i></div>
+              <h2 class="serif">Nothing to review yet</h2>
+              <p>Choose a file and we will check each row for missing names and phone numbers.</p>
+            </div>
+
+            <div id="review">
+              <div class="sumrow" style="margin-top:.8rem">
+                <span class="pill" id="pTotal"></span>
+                <span class="pill ok" id="pOk"></span>
+                <span class="pill warn" id="pWarn" hidden></span>
+                <label class="only" id="onlyWrap" hidden><input type="checkbox" id="onlyIssues"> Show only rows to
+                  review</label>
+              </div>
+              <div class="banner" id="banner"><i class="bx bx-error-circle"></i><span id="bannerText"></span></div>
+              <div class="rv-scroll mt-3">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Guest</th>
+                      <th>Pass</th>
+                      <th>Phone</th>
+                      <th>Check</th>
+                    </tr>
+                  </thead>
+                  <tbody id="previewTableBody"></tbody>
+                </table>
+              </div>
+              <div class="cap" id="cap" hidden></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="bar">
+        <span class="msg" id="barMsg">Choose a CSV file to begin.</span>
+        <a href="/events/<%= event.id %>/guests" class="btn-ig quiet">Cancel</a>
+        <button type="submit" class="btn-ig primary" id="importBtn" disabled>
+          <i class="bx bx-upload fs-5" id="impIcon"></i><span id="impText">Import guests</span>
+          <span class="spinner-border spinner-border-sm d-none" id="impSpin"></span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      const $ = id => document.getElementById(id);
+      const input = $('csvFileInput'), zone = $('dropzone'), body = $('previewTableBody');
+      const PREVIEW_CAP = 50;
+      let parsed = [];            // [{name,type,phone,level,why}]
+      let blocked = false;
+
+      /* ---------- Steps ---------- */
+      function setStep(n) {
+        document.querySelectorAll('.steps li').forEach(li => {
+          const s = +li.dataset.step;
+          li.className = s < n ? 'done' : (s === n ? 'cur' : '');
+          li.querySelector('span').innerHTML = s < n ? '<i class="bx bx-check"></i>' : s;
+        });
+      }
+
+      /* ---------- CSV parsing (handles quoted commas, BOM, CRLF) ---------- */
+      function parseCSV(text) {
+        text = text.replace(/^\uFEFF/, '');
+        const rows = []; let row = [], cur = '', q = false;
+        for (let i = 0; i < text.length; i++) {
+          const c = text[i];
+          if (q) {
+            if (c === '"' && text[i + 1] === '"') { cur += '"'; i++; }
+            else if (c === '"') q = false;
+            else cur += c;
+          } else if (c === '"') q = true;
+          else if (c === ',') { row.push(cur.trim()); cur = ''; }
+          else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur.trim()); rows.push(row); row = []; cur = ''; }
+          else cur += c;
         }
-        
-        if (rowCount >= 50) {
-          const warningTr = document.createElement('tr');
-          warningTr.className = 'table-warning text-center';
-          warningTr.innerHTML = `<td colspan="4" class="small text-muted py-2">Preview capped at first 50 rows. Remaining records process cleanly upon import.</td>`;
-          tableBody.appendChild(warningTr);
-          break;
+        row.push(cur.trim()); rows.push(row);
+        return rows.filter(r => r.some(v => v !== ''));
+      }
+
+      function check(r) {
+        if (!r.name) return ['e', 'Name is missing'];
+        const t = r.type.toLowerCase();
+        if (r.type && t !== 'single' && t !== 'double') return ['w', 'Pass type should be Single or Double'];
+        if (r.phone) {
+          if (/\D/.test(r.phone)) return ['w', 'Phone should contain digits only'];
+          if (/^(0|255)/.test(r.phone)) return ['w', 'Remove the leading 0 or 255'];
+        } else return ['w', 'No phone, so no SMS can be sent'];
+        return ['', ''];
+      }
+
+      function analyse(text) {
+        const rows = parseCSV(text);
+        blocked = false; parsed = [];
+        let bannerMsg = '', bannerWarn = false;
+        if (!rows.length) { blocked = true; bannerMsg = 'The file is empty.'; return bannerMsg; }
+
+        const head = rows[0].map(h => h.toLowerCase());
+        const hasHeader = head.includes('name');
+        let ix = { name: 0, type: 1, phone: 2 };
+        if (hasHeader) {
+          ix = { name: head.indexOf('name'), type: head.indexOf('type'), phone: head.indexOf('phone') };
+          const missing = ['name', 'type', 'phone'].filter(k => ix[k] === -1);
+          if (missing.length) { blocked = true; bannerMsg = 'The header row is missing: ' + missing.join(', ') + '. Use exactly name,type,phone.'; }
+          else if (rows[0].some((h, i) => h !== h.toLowerCase())) { bannerWarn = true; bannerMsg = 'Headers should be lowercase: name,type,phone.'; }
+        } else {
+          blocked = true; bannerMsg = 'The first row must be the header: name,type,phone. Add it and choose the file again.';
         }
+        rows.slice(hasHeader ? 1 : 0).forEach(c => {
+          const r = { name: c[ix.name] || '', type: ix.type > -1 ? (c[ix.type] || '') : '', phone: ix.phone > -1 ? (c[ix.phone] || '') : '' };
+          [r.level, r.why] = check(r);
+          parsed.push(r);
+        });
+        $('banner').dataset.warn = bannerWarn ? '1' : '';
+        return bannerMsg;
       }
 
-      if (rowCount > 0) {
-        placeholder.style.display = 'none';
-        container.style.display = 'block';
-        statusText.innerText = `Successfully parsed data stream`;
-        previewBadge.className = "badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-1.5 fw-bold";
-        previewBadge.innerText = `${rowCount} Records Staged`;
-      } else {
-        placeholder.style.display = 'flex';
-        container.style.display = 'none';
-        statusText.innerText = 'Unable to extract valid records';
-        previewBadge.className = "badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-3 py-1.5 fw-bold";
-        previewBadge.innerText = `0 Records`;
+      /* ---------- Rendering ---------- */
+      function cell(tag, text, cls) { const e = document.createElement(tag); if (cls) e.className = cls; e.textContent = text; return e; }
+
+      function render() {
+        const only = $('onlyIssues').checked;
+        const list = parsed.map((r, i) => ({ r, n: i + 1 })).filter(x => !only || x.r.level);
+        body.innerHTML = '';
+        list.slice(0, PREVIEW_CAP).forEach(({ r, n }) => {
+          const tr = document.createElement('tr'); if (r.level) tr.className = r.level;
+          tr.appendChild(cell('td', n, 'n'));
+          const g = cell('td', r.name || 'No name'); g.style.fontWeight = '600'; if (!r.name) g.style.color = 'var(--bad)'; tr.appendChild(g);
+          tr.appendChild(cell('td', r.type || 'Single'));
+          tr.appendChild(cell('td', r.phone || '—', 'mono'));
+          const c = document.createElement('td');
+          if (r.level) c.appendChild(cell('span', r.why, 'why ' + r.level));
+          else c.innerHTML = '<i class="bx bx-check-circle good"></i>';
+          tr.appendChild(c); body.appendChild(tr);
+        });
+        const cap = $('cap');
+        cap.hidden = list.length <= PREVIEW_CAP;
+        cap.textContent = 'Showing the first ' + PREVIEW_CAP + ' of ' + list.length + ' rows. All rows are checked and imported.';
       }
-    };
 
-    reader.readAsText(file);
-  }
+      function showResult(fileName) {
+        const total = parsed.length, bad = parsed.filter(r => r.level).length, ok = total - bad;
+        const bannerEl = $('banner'), msg = $('bannerText').textContent;
+        $('rvEmpty').style.display = 'none'; $('review').style.display = 'block';
+        $('pTotal').textContent = total + (total === 1 ? ' guest' : ' guests');
+        $('pOk').textContent = ok + ' ready';
+        $('pWarn').hidden = bad === 0; $('pWarn').textContent = bad + ' to review';
+        $('onlyWrap').hidden = bad === 0; $('onlyIssues').checked = false;
+        bannerEl.style.display = msg ? 'flex' : 'none';
+        bannerEl.classList.toggle('warn', !!bannerEl.dataset.warn && !blocked);
+        $('rvSub').textContent = fileName;
+        render();
 
-  // Generate Sample CSV File Engine
-  function downloadSampleCSV() {
-    const csvContent = "name,type,phone\nJohn Doe,Single,712345678\nJane Smith,Double,787654321\nOmari Hamisi,Single,654321098";
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "guest_import_template.csv");
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-</script>
+        const btn = $('importBtn');
+        btn.disabled = blocked || total === 0;
+        $('impText').textContent = total ? 'Import ' + total + (total === 1 ? ' guest' : ' guests') : 'Import guests';
+        $('barMsg').innerHTML = blocked ? 'Fix the file and choose it again.'
+          : '<b>' + total + '</b> ' + (total === 1 ? 'guest' : 'guests') + ' ready to import' + (bad ? ' · <b>' + bad + '</b> to review' : '');
+        setStep(blocked ? 1 : 2);
+      }
+
+      /* ---------- File handling ---------- */
+      function reject(msg) {
+        input.value = ''; zone.classList.remove('has'); zone.classList.add('bad');
+        $('dropErr').textContent = msg; $('dropErr').style.display = 'block';
+        $('dropIcon').innerHTML = '<i class="bx bx-error"></i>';
+      }
+
+      input.addEventListener('change', () => {
+        const file = input.files[0];
+        $('dropErr').style.display = 'none'; zone.classList.remove('bad');
+        if (!file) return;
+        if (!/\.csv$/i.test(file.name)) return reject('That is not a CSV file. Export your sheet as .csv and try again.');
+
+        zone.classList.add('has');
+        $('dropIcon').innerHTML = '<i class="bx bx-check"></i>';
+        $('dropTitle').textContent = file.name;
+        $('dropSub').textContent = (file.size / 1024).toFixed(1) + ' KB. Click or drop to replace.';
+
+        const reader = new FileReader();
+        reader.onload = e => { $('bannerText').textContent = analyse(e.target.result); showResult(file.name); };
+        reader.onerror = () => reject('We could not read that file. Try exporting it again.');
+        reader.readAsText(file);
+      });
+
+      ['dragenter', 'dragover'].forEach(t => zone.addEventListener(t, () => zone.classList.add('over')));
+      ['dragleave', 'drop'].forEach(t => zone.addEventListener(t, () => zone.classList.remove('over')));
+      $('onlyIssues').addEventListener('change', render);
+
+      $('uploadForm').addEventListener('submit', () => {
+        $('importBtn').disabled = true; $('impText').textContent = 'Importing…';
+        $('impIcon').classList.add('d-none'); $('impSpin').classList.remove('d-none'); setStep(3);
+      });
+      window.addEventListener('pageshow', () => { if (!blocked && parsed.length) { $('impIcon').classList.remove('d-none'); $('impSpin').classList.add('d-none'); showResult($('rvSub').textContent); } });
+
+      /* ---------- Sample template ---------- */
+      $('sampleBtn').addEventListener('click', () => {
+        const csv = 'name,type,phone\nJohn Doe,Single,712345678\nJane Smith,Double,787654321\nOmari Hamisi,Single,654321098';
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+        a.download = 'guest_import_template.csv';
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+    })();
+  </script>

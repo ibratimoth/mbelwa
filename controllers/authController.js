@@ -50,6 +50,10 @@ async function handleLogin(req, res, next) {
         email: foundUser.email
       };
 
+      // 🔒 INITIALIZE LOCK STATE TO FALSE
+      req.session.isLocked = false;
+      delete req.session.lockTimestamp;
+
       // Save the regenerated session before redirecting to prevent race conditions
       req.session.save((err) => {
         if (err) {
@@ -123,10 +127,122 @@ async function handleLogout(req, res) {
   });
 }
 
+// 1. Render Lock Screen
+async function renderLock(req, res) {
+  if (!req.session || !req.session.userId) {
+    return res.redirect('/login');
+  }
+
+  // Ensure session is marked as locked when viewing lock page
+  req.session.isLocked = true;
+  if (!req.session.lockTimestamp) {
+    req.session.lockTimestamp = Date.now();
+  }
+
+  res.render('auth/lock', {
+    user: req.session.user,
+    error: null,
+    csrfToken: req.session.csrfToken
+  });
+}
+
+// 2. Handle Unlock Submission
+async function handleUnlock(req, res, next) {
+  try {
+    const { password } = req.body;
+
+    // 1. Validate password presence
+    if (!password) {
+      return res.status(400).render('auth/lock', {
+        user: req.session.user,
+        error: 'Password is required to unlock.',
+        csrfToken: req.session.csrfToken
+      });
+    }
+
+    // 2. Fetch active session user from database
+    const user = await User.findByPk(req.session.userId);
+    if (!user) {
+      console.warn(`[Lockout Controller] ⚠️ User ID (${req.session.userId}) not found during unlock. Destroying session.`);
+      return req.session.destroy(() => {
+        res.clearCookie('delle.sid');
+        res.redirect('/login');
+      });
+    }
+
+    // 3. Verify password match
+    const isMatch = await user.validPassword(password);
+    if (!isMatch) {
+      console.warn(`[Lockout Controller] ❌ Incorrect unlock password attempt for user ID: ${req.session.userId}`);
+      return res.status(401).render('auth/lock', {
+        user: req.session.user,
+        error: 'Incorrect password. Please try again.',
+        csrfToken: req.session.csrfToken
+      });
+    }
+
+    // 4. Password valid -> Clear lockout flags
+    console.log(`[Lockout Controller] ✅ Session successfully unlocked for user ID: ${req.session.userId}`);
+    req.session.isLocked = false;
+    delete req.session.lockTimestamp;
+
+    // 5. 🎯 PRE-LOCKOUT RETURN URL RESTORATION
+    let destination = req.session.returnTo || '/';
+    delete req.session.returnTo; // Always delete to prevent stale redirect loops
+
+    // 6. 🛡️ OPEN REDIRECT GUARD: Ensure destination is strictly a relative local path starting with '/'
+    if (!destination.startsWith('/') || destination.startsWith('//')) {
+      console.warn(`[Lockout Controller] ⚠️ Untrusted redirect target detected (${destination}). Fallback to '/'`);
+      destination = '/';
+    }
+
+    console.log(`[Lockout Controller] 🔀 Restoring user navigation session to: ${destination}`);
+
+    // 7. Save session state changes securely before completing redirect
+    req.session.save((err) => {
+      if (err) {
+        console.error('[Lockout Controller] Session save error during unlock:', err);
+        return next(err);
+      }
+      res.redirect(destination);
+    });
+
+  } catch (err) {
+    console.error('[Lockout Controller] Unlock handling exception:', err);
+    next(err);
+  }
+}
+
+// 3. API Endpoint called when the 10s countdown finishes on frontend
+async function triggerLockoutApi(req, res) {
+  if (req.session && req.session.userId) {
+    req.session.isLocked = true;
+    req.session.lockTimestamp = Date.now();
+
+    // Save the exact pre-lockout route sent from the client
+    if (req.body && req.body.returnTo && typeof req.body.returnTo === 'string') {
+      req.session.returnTo = req.body.returnTo;
+      console.log(`[Lockout] Saved pre-lockout location: ${req.session.returnTo}`);
+    }
+
+    req.session.save((err) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: 'Failed to lock session' });
+      }
+      return res.json({ success: true, redirect: '/lock' });
+    });
+  } else {
+    res.status(401).json({ success: false, redirect: '/login' });
+  }
+}
+
 module.exports = {
   renderLogin,
   handleLogin,
   renderRegister,
   handleRegister,
-  handleLogout
+  handleLogout,
+  renderLock,
+  handleUnlock,
+  triggerLockoutApi
 };

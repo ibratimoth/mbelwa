@@ -14,4 +14,9 @@ router.post('/register', forwardAuthenticated, validateRegister, authController.
 
 router.post('/logout', ensureAuthenticated, authController.handleLogout);
 
+// Session Lock routes
+router.get('/lock', authController.renderLock);
+router.post('/unlock', verifyCsrf, authController.handleUnlock);
+router.post('/api/session/lock', authController.triggerLockoutApi);
+
 module.exports = router;
