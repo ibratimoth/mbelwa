@@ -5,366 +5,304 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="<%= csrfToken %>">
-  <title>Create Account — Delle Cards</title>
+  <meta name="theme-color" content="#073a4a">
+  <title>Create account | Delle Cards</title>
 
-  <!-- Google Fonts: Inter -->
+  <link rel="icon" type="image/jpeg" href="/images/delleventures.jpeg">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- Bootstrap 5 & Boxicons -->
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
   <style>
     :root {
-      --delle-teal: #0e697b;
-      --delle-teal-dark: #073a4a;
-      --delle-teal-soft: rgba(14, 105, 123, 0.08);
-      --delle-gold: #e5a000;
-      --delle-gold-hover: #c48c17;
-      --delle-gold-soft: rgba(229, 160, 0, 0.12);
-      --delle-dark-bg: #0b132b;
-      --delle-light-bg: #f8fafc;
-      --delle-border: rgba(15, 23, 42, 0.08);
+      --delle-teal: #0e697b; --delle-teal-hover: #0a5160; --delle-teal-deep: #073a4a; --delle-teal-soft: rgba(14,105,123,.08);
+      --delle-gold: #e5a000; --delle-gold-soft: rgba(229,160,0,.14);
+      --ink: #0f2530; --muted: #5d7079; --line: rgba(15,37,48,.14); --ok: #198754; --bad: #c2255c;
     }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: var(--ink); background: #fff; -webkit-font-smoothing: antialiased; }
+    .serif { font-family: 'Fraunces', Georgia, serif; font-weight: 600; letter-spacing: -.015em; }
+    :focus-visible { outline: 3px solid var(--delle-gold); outline-offset: 2px; }
 
-    body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background-color: var(--delle-light-bg);
-      color: #0f172a;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0;
-      padding: 0;
-      -webkit-font-smoothing: antialiased;
-    }
+    .auth { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
 
-    /* Main Container Shell */
-    .auth-shell {
-      width: 100%;
-      min-height: 100vh;
-      display: flex;
-    }
+    /* ---------- Brand panel ---------- */
+    .hero { position: relative; overflow: hidden; background: linear-gradient(145deg, var(--delle-teal-deep) 0%, var(--delle-teal) 100%); color: #fff; padding: 3rem 3.5rem; display: flex; flex-direction: column; }
+    .hero::before, .hero::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; border: 1px solid rgba(229,160,0,.32); }
+    .hero::before { width: 520px; height: 520px; right: -170px; bottom: -190px; box-shadow: 0 0 0 48px rgba(229,160,0,.045), 0 0 0 104px rgba(229,160,0,.03); }
+    .hero::after { width: 200px; height: 200px; left: -70px; top: 38%; border-color: rgba(255,255,255,.12); }
+    .brand { display: inline-flex; align-items: center; gap: .7rem; text-decoration: none; position: relative; z-index: 2; }
+    .brand img { width: 42px; height: 42px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,.3); }
+    .brand .w { font-size: 1.45rem; color: #fff; } .brand .w span { color: var(--delle-gold); }
 
-    /* Left Showcase Hero Panel */
-    .auth-hero-panel {
-      background: linear-gradient(135deg, var(--delle-teal-dark) 0%, var(--delle-teal) 100%);
-      color: #ffffff;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 3.5rem;
-      position: relative;
-      overflow: hidden;
-    }
+    .hero-main { margin: auto 0; padding: 2.5rem 0; position: relative; z-index: 2; max-width: 500px; }
+    .hero h1 { font-size: clamp(2rem, 3.2vw, 2.9rem); line-height: 1.1; margin: 0 0 1rem; color: #fff; }
+    .hero p.lead { color: rgba(255,255,255,.8); font-size: 1.02rem; line-height: 1.6; margin: 0 0 2.2rem; max-width: 440px; }
 
-    .auth-hero-panel::after {
-      content: '';
-      position: absolute;
-      right: -100px;
-      bottom: -100px;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(229, 160, 0, 0.25) 0%, rgba(255,255,255,0) 70%);
-      pointer-events: none;
-    }
+    .flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+    .flow li { display: grid; grid-template-columns: 40px 1fr; gap: 1rem; position: relative; padding-bottom: 1.6rem; }
+    .flow li:last-child { padding-bottom: 0; }
+    .flow li:not(:last-child)::before { content: ''; position: absolute; left: 19px; top: 40px; bottom: 0; width: 2px; background: linear-gradient(var(--delle-gold), rgba(229,160,0,.15)); }
+    .flow .n { width: 40px; height: 40px; border-radius: 50%; background: var(--delle-gold); color: #1d1500; font-weight: 700; display: grid; place-items: center; }
+    .flow b { display: block; font-size: 1.02rem; margin-top: .1rem; } .flow span { color: rgba(255,255,255,.72); font-size: .9rem; line-height: 1.5; }
 
-    .hero-feature-badge {
-      background: rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 12px;
-      padding: 0.75rem 1.25rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      max-width: 420px;
-    }
+    .hero-foot { position: relative; z-index: 2; font-size: .82rem; color: rgba(255,255,255,.6); }
 
-    /* Right Form Control Panel */
-    .auth-form-panel {
-      width: 100%;
-      max-width: 540px;
-      background: #ffffff;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 3.5rem 3rem;
-      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.02);
-      overflow-y: auto;
-    }
+    /* ---------- Form panel ---------- */
+    .panel { display: flex; flex-direction: column; justify-content: center; padding: 3rem 2rem; position: relative; }
+    .panel-in { width: 100%; max-width: 420px; margin: 0 auto; }
+    .m-brand { display: none; margin-bottom: 1.8rem; }
+    .m-brand .w { font-size: 1.4rem; color: var(--delle-teal); } .m-brand .w span { color: var(--delle-gold); }
+    .m-brand img { width: 40px; height: 40px; border-radius: 11px; object-fit: cover; border: 1px solid var(--line); }
 
-    /* Form Inputs Styling */
-    .form-control {
-      border: 1px solid var(--delle-border);
-      padding: 0.75rem 1rem;
-      border-radius: 10px;
-      font-size: 0.925rem;
-      transition: all 0.2s ease;
-      background-color: #f8fafc;
-    }
+    .panel h2 { font-size: 2rem; margin: 0 0 .4rem; color: var(--delle-teal-deep); }
+    .panel .sub { color: var(--muted); margin: 0 0 1.6rem; }
 
-    .form-control:focus {
-      background-color: #ffffff;
-      border-color: var(--delle-teal);
-      box-shadow: 0 0 0 4px var(--delle-teal-soft);
-    }
+    .alert-x { display: flex; gap: .6rem; align-items: flex-start; background: rgba(194,37,92,.08); color: #8c1d46; border-radius: 12px; padding: .8rem 1rem; font-size: .9rem; font-weight: 500; margin-bottom: 1.25rem; }
+    .alert-x i { font-size: 1.25rem; flex: none; margin-top: 1px; }
 
-    .input-group-text {
-      background-color: #f8fafc;
-      border: 1px solid var(--delle-border);
-      border-right: none;
-      color: #64748b;
-      border-top-left-radius: 10px;
-      border-bottom-left-radius: 10px;
-    }
+    .fld { margin-bottom: 1.05rem; }
+    .fld label { display: block; font-size: .86rem; font-weight: 600; margin-bottom: .4rem; }
+    .inp { position: relative; }
+    .inp > i.lead-ic { position: absolute; left: .95rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1.2rem; pointer-events: none; }
+    .inp input { width: 100%; height: 52px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 3rem 0 2.8rem; font-size: .98rem; background: #fff; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+    .inp input.plain { padding-right: .9rem; }
+    .inp input::placeholder { color: #93a3ab; }
+    .inp input:hover { border-color: rgba(14,105,123,.45); }
+    .inp input:focus { outline: 0; border-color: var(--delle-teal); box-shadow: 0 0 0 4px rgba(14,105,123,.15); }
+    .inp input.bad { border-color: var(--bad); } .inp input.good { border-color: var(--ok); }
+    .eye { position: absolute; right: .35rem; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: 0; background: transparent; color: var(--muted); border-radius: 10px; font-size: 1.3rem; display: grid; place-items: center; }
+    .eye:hover { background: var(--delle-teal-soft); color: var(--delle-teal); }
 
-    .input-group .form-control {
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-    }
+    .meter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: .6rem; }
+    .meter i { height: 5px; border-radius: 3px; background: #e2eaed; transition: background .2s; }
+    .meter[data-s="1"] i:nth-child(-n+1) { background: var(--bad); }
+    .meter[data-s="2"] i:nth-child(-n+2) { background: var(--delle-gold); }
+    .meter[data-s="3"] i:nth-child(-n+3) { background: var(--delle-teal); }
+    .meter[data-s="4"] i { background: var(--ok); }
+    .hint { font-size: .8rem; color: var(--muted); margin-top: .4rem; min-height: 1.2em; }
+    .hint.ok { color: var(--ok); font-weight: 600; } .hint.no { color: var(--bad); font-weight: 600; }
 
-    /* Primary Gold Button */
-    .btn-delle-gold {
-      background-color: var(--delle-gold);
-      color: #ffffff;
-      border: none;
-      border-radius: 10px;
-      font-weight: 600;
-      padding: 0.85rem 1.5rem;
-      transition: all 0.25s ease;
-    }
+    .btn-go { width: 100%; height: 54px; margin-top: .7rem; border: 0; border-radius: 12px; background: var(--delle-teal); color: #fff; font-weight: 700; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: .6rem; transition: background .15s, box-shadow .15s; }
+    .btn-go:hover:not(:disabled) { background: var(--delle-teal-hover); box-shadow: 0 10px 24px rgba(14,105,123,.28); }
+    .btn-go:disabled { opacity: .75; cursor: progress; }
+    .btn-go i { font-size: 1.3rem; transition: transform .2s; } .btn-go:hover:not(:disabled) i { transform: translateX(3px); }
 
-    .btn-delle-gold:hover {
-      background-color: var(--delle-gold-hover);
-      color: #ffffff;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(229, 160, 0, 0.3);
-    }
+    .alt { margin-top: 1.6rem; padding-top: 1.3rem; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: .92rem; }
+    .alt a { color: var(--delle-teal); font-weight: 700; text-decoration: none; margin-left: .3rem; } .alt a:hover { text-decoration: underline; }
 
-    .password-toggle-btn {
-      cursor: pointer;
-      background-color: #f8fafc;
-      border: 1px solid var(--delle-border);
-      border-left: none;
-      color: #64748b;
-      border-top-right-radius: 10px;
-      border-bottom-right-radius: 10px;
-    }
-
-    /* Responsive Mobile Adjustment */
     @media (max-width: 991.98px) {
-      .auth-hero-panel {
-        display: none;
-      }
-      .auth-form-panel {
-        max-width: 100%;
-        min-height: 100vh;
-      }
+      .auth { grid-template-columns: 1fr; }
+      .hero { display: none; }
+      .m-brand { display: inline-flex; }
+      .panel { min-height: 100vh; padding: 2rem 1.4rem; }
+      .panel::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 6px; background: linear-gradient(90deg, var(--delle-teal-deep), var(--delle-teal), var(--delle-gold)); }
     }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 </head>
 
 <body>
+  <div class="auth">
 
-  <div class="auth-shell">
+    <!-- Brand panel -->
+    <aside class="hero">
+      <a href="/" class="brand" aria-label="Delle Cards">
+        <img src="/images/delleventures.jpeg" alt="">
+        <span class="w serif">Delle<span>Cards</span></span>
+      </a>
 
-    <!-- LEFT COLUMN: BRAND SHOWCASE HERO -->
-    <div class="auth-hero-panel">
-      <!-- Top Branding -->
-      <div class="d-flex align-items-center gap-2.5">
-        <img src="/images/delleventures.jpeg" alt="Delle Cards Logo" height="42" class="rounded-3 shadow-sm border border-white border-opacity-20">
-        <span class="fs-4 fw-bold text-white tracking-tight">Delle<span style="color: var(--delle-gold);">Cards</span></span>
+      <div class="hero-main">
+        <h1 class="serif">Your first event, ready in minutes.</h1>
+        <p class="lead">Create an account and you can start inviting guests the same day.</p>
+
+        <ol class="flow">
+          <li><div class="n">1</div><div><b>Create your event</b><span>Add the date, venue and your invitation card design.</span></div></li>
+          <li><div class="n">2</div><div><b>Import your guests</b><span>Upload a CSV and each guest gets their own entry code.</span></div></li>
+          <li><div class="n">3</div><div><b>Send and check in</b><span>Invite by SMS or WhatsApp, then scan guests in at the door.</span></div></li>
+        </ol>
       </div>
 
-      <!-- Hero Value Pitch -->
-      <div class="my-auto py-5" style="z-index: 2; max-width: 480px;">
-        <span class="badge rounded-pill bg-white bg-opacity-10 text-white px-3 py-1.5 fw-semibold mb-3 border border-white border-opacity-20">
-          <i class="bx bx-star text-warning me-1"></i> Start Event Management
-        </span>
-        <h1 class="display-6 fw-bold text-white mb-3" style="line-height: 1.2;">
-          Elevate Your Digital Invitations.
-        </h1>
-        <p class="fs-6 text-white-50 mb-4 fw-normal">
-          Join planners and organizers using automated digital pass creation, bulk SMS & WhatsApp broadcasts, and high-speed door scanning.
-        </p>
+      <div class="hero-foot">&copy; <%= new Date().getFullYear() %> Delle Ventures</div>
+    </aside>
 
-        <!-- Feature List Stack -->
-        <div class="d-flex flex-column gap-2.5">
-          <div class="hero-feature-badge shadow-sm">
-            <div class="p-2 rounded-2 bg-warning bg-opacity-20 text-warning">
-              <i class="bx bx-paper-plane fs-4"></i>
+    <!-- Form panel -->
+    <main class="panel">
+      <div class="panel-in">
+
+        <a href="/" class="brand m-brand" aria-label="Delle Cards">
+          <img src="/images/delleventures.jpeg" alt="">
+          <span class="w serif">Delle<span>Cards</span></span>
+        </a>
+
+        <h2 class="serif">Create your account</h2>
+        <p class="sub">It takes less than a minute.</p>
+
+        <div id="errorAlertContainer" aria-live="assertive">
+          <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert-x" role="alert"><i class="bx bx-error-circle"></i><span id="errorText"><%= error %></span></div>
+          <% } %>
+        </div>
+
+        <form action="/register" method="POST" id="registerForm" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <div class="fld">
+            <label for="nameInput">Full name</label>
+            <div class="inp">
+              <i class="bx bx-user lead-ic"></i>
+              <input type="text" name="name" id="nameInput" class="plain" value="<%= typeof name !== 'undefined' ? name : '' %>" required placeholder="John Doe" autocomplete="name" autofocus>
             </div>
-            <div>
-              <div class="fw-bold text-white fs-7">Multi-channel Distribution</div>
-              <div class="text-white-50 fs-8">Automated SMS & WhatsApp guest delivery</div>
+          </div>
+
+          <div class="fld">
+            <label for="emailInput">Email address</label>
+            <div class="inp">
+              <i class="bx bx-envelope lead-ic"></i>
+              <input type="email" name="email" id="emailInput" class="plain" value="<%= typeof email !== 'undefined' ? email : '' %>" required placeholder="name@company.com" autocomplete="email">
             </div>
           </div>
 
-          <div class="hero-feature-badge shadow-sm">
-            <div class="p-2 rounded-2 bg-info bg-opacity-20 text-info">
-              <i class="bx bx-palette fs-4"></i>
+          <div class="fld">
+            <label for="passwordInput">Password</label>
+            <div class="inp">
+              <i class="bx bx-lock-alt lead-ic"></i>
+              <input type="password" name="password" id="passwordInput" required placeholder="Create a password" autocomplete="new-password" aria-describedby="pwHint">
+              <button type="button" class="eye" data-eye="passwordInput" aria-label="Show password" aria-pressed="false"><i class="bx bx-hide"></i></button>
             </div>
-            <div>
-              <div class="fw-bold text-white fs-7">Custom Card Editor</div>
-              <div class="text-white-50 fs-8">Overlay dynamic QR codes onto high-res graphics</div>
+            <div class="meter" id="meter" data-s="0" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <div class="hint" id="pwHint" aria-live="polite">Use 8 or more characters with letters and numbers.</div>
+          </div>
+
+          <div class="fld">
+            <label for="confirmPasswordInput">Confirm password</label>
+            <div class="inp">
+              <i class="bx bx-check-shield lead-ic"></i>
+              <input type="password" name="confirm_password" id="confirmPasswordInput" required placeholder="Type it again" autocomplete="new-password" aria-describedby="matchHint">
+              <button type="button" class="eye" data-eye="confirmPasswordInput" aria-label="Show password" aria-pressed="false"><i class="bx bx-hide"></i></button>
             </div>
+            <div class="hint" id="matchHint" aria-live="polite"></div>
           </div>
-        </div>
+
+          <button type="submit" id="submitBtn" class="btn-go">
+            <span id="btnText">Create account</span>
+            <i class="bx bx-right-arrow-alt" id="btnIcon"></i>
+            <span class="spinner-border spinner-border-sm d-none" id="btnSpin"></span>
+          </button>
+        </form>
+
+        <div class="alt">Already have an account?<a href="/login">Sign in</a></div>
       </div>
-
-      <!-- Footer Branding -->
-      <div class="text-white-50 small" style="z-index: 2;">
-        &copy; <%= new Date().getFullYear() %> Delle Ventures. All rights reserved.
-      </div>
-    </div>
-
-    <!-- RIGHT COLUMN: REGISTRATION FORM PANEL -->
-    <div class="auth-form-panel">
-      
-      <!-- Mobile Top Logo -->
-      <div class="d-lg-none text-center mb-4">
-        <img src="/images/delleventures.jpeg" alt="Delle Cards Logo" height="40" class="rounded-3 border mb-2">
-        <h4 class="fw-bold text-dark mb-0">Delle<span style="color: var(--delle-gold);">Cards</span></h4>
-      </div>
-
-      <div class="mb-4">
-        <h3 class="fw-bold text-dark mb-1">Create Account</h3>
-        <p class="text-muted small mb-0">Register to manage events and generate custom card passes</p>
-      </div>
-
-      <!-- Flash Error Banner -->
-      <% if (typeof error !== 'undefined' && error) { %>
-        <div class="alert alert-danger border-0 bg-danger-subtle text-danger d-flex align-items-center gap-2.5 small py-2.5 px-3 rounded-3 mb-4" role="alert">
-          <i class="bx bx-error-circle fs-5 flex-shrink-0"></i>
-          <div class="fw-medium"><%= error %></div>
-        </div>
-      <% } %>
-
-      <!-- Client Password Error Alert -->
-      <div id="passwordMismatchAlert" class="alert alert-danger border-0 bg-danger-subtle text-danger d-none align-items-center gap-2.5 small py-2.5 px-3 rounded-3 mb-4" role="alert">
-        <i class="bx bx-x-circle fs-5 flex-shrink-0"></i>
-        <div class="fw-medium">Passwords do not match. Please verify your entries.</div>
-      </div>
-
-      <!-- Registration Form -->
-      <form action="/register" method="POST" id="registerForm">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-
-        <!-- Full Name -->
-        <div class="mb-3">
-          <label class="form-label small fw-bold text-secondary">Full Name</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bx bx-user fs-5"></i></span>
-            <input type="text" name="name" class="form-control" value="<%= typeof name !== 'undefined' ? name : '' %>" required placeholder="John Doe" autofocus>
-          </div>
-        </div>
-
-        <!-- Email Address -->
-        <div class="mb-3">
-          <label class="form-label small fw-bold text-secondary">Email Address</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bx bx-envelope fs-5"></i></span>
-            <input type="email" name="email" class="form-control" value="<%= typeof email !== 'undefined' ? email : '' %>" required placeholder="name@company.com">
-          </div>
-        </div>
-
-        <!-- Password Field -->
-        <div class="mb-3">
-          <label class="form-label small fw-bold text-secondary">Password</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bx bx-lock-alt fs-5"></i></span>
-            <input type="password" name="password" id="passwordInput" class="form-control" required placeholder="••••••••">
-            <button class="btn password-toggle-btn px-3 d-flex align-items-center" type="button" id="togglePasswordBtn">
-              <i class="bx bx-hide fs-5" id="togglePasswordIcon"></i>
-            </button>
-          </div>
-        </div>
-
-        <!-- Confirm Password Field -->
-        <div class="mb-4">
-          <label class="form-label small fw-bold text-secondary">Confirm Password</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bx bx-check-shield fs-5"></i></span>
-            <input type="password" name="confirm_password" id="confirmPasswordInput" class="form-control" required placeholder="••••••••">
-            <button class="btn password-toggle-btn px-3 d-flex align-items-center" type="button" id="toggleConfirmPasswordBtn">
-              <i class="bx bx-hide fs-5" id="toggleConfirmPasswordIcon"></i>
-            </button>
-          </div>
-        </div>
-
-        <!-- Submit Button -->
-        <button type="submit" class="btn btn-delle-gold w-100 shadow-sm d-inline-flex align-items-center justify-content-center gap-2">
-          <span>Register Account</span>
-          <i class="bx bx-user-plus fs-5"></i>
-        </button>
-      </form>
-
-      <!-- Bottom Login Redirect -->
-      <div class="text-center mt-4 pt-3 border-top">
-        <p class="small text-muted mb-0">
-          Already have an account? 
-          <a href="/login" class="fw-bold text-decoration-none ms-1" style="color: var(--delle-teal);">Sign In Here</a>
-        </p>
-      </div>
-
-    </div>
-
+    </main>
   </div>
 
-  <!-- Interactive Scripts Driver -->
   <script>
-    // Password 1 Toggle
-    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
-    const passwordInput = document.getElementById('passwordInput');
-    const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+    (function () {
+      const $ = id => document.getElementById(id);
+      const form = $('registerForm'), pw = $('passwordInput'), cpw = $('confirmPasswordInput'), box = $('errorAlertContainer');
 
-    if (togglePasswordBtn && passwordInput && togglePasswordIcon) {
-      togglePasswordBtn.addEventListener('click', function () {
-        const isPassword = passwordInput.getAttribute('type') === 'password';
-        passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
-        togglePasswordIcon.classList.toggle('bx-hide', !isPassword);
-        togglePasswordIcon.classList.toggle('bx-show', isPassword);
-      });
-    }
+      /* Show / hide password (both fields) */
+      document.querySelectorAll('[data-eye]').forEach(btn => btn.addEventListener('click', () => {
+        const input = $(btn.dataset.eye), show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.setAttribute('aria-pressed', show);
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        btn.querySelector('i').className = 'bx ' + (show ? 'bx-show' : 'bx-hide');
+      }));
 
-    // Confirm Password Toggle
-    const toggleConfirmPasswordBtn = document.getElementById('toggleConfirmPasswordBtn');
-    const confirmPasswordInput = document.getElementById('confirmPasswordInput');
-    const toggleConfirmPasswordIcon = document.getElementById('toggleConfirmPasswordIcon');
+      /* Password strength: advice only, the server rules decide what is accepted */
+      const LABELS = ['', 'Weak. Add more characters.', 'Fair. Try mixing letters and numbers.', 'Good.', 'Strong.'];
+      function strength(v) {
+        if (!v) return 0;
+        let s = 0;
+        if (v.length >= 8) s++;
+        if (/[a-z]/.test(v) && /[A-Z]/.test(v)) s++;
+        if (/\d/.test(v)) s++;
+        if (/[^A-Za-z0-9]/.test(v) || v.length >= 14) s++;
+        return Math.max(1, s);
+      }
+      function updateStrength() {
+        const s = strength(pw.value);
+        $('meter').dataset.s = s;
+        $('pwHint').textContent = s ? LABELS[s] : 'Use 8 or more characters with letters and numbers.';
+        updateMatch();
+      }
+      function updateMatch() {
+        const h = $('matchHint');
+        if (!cpw.value) { h.textContent = ''; h.className = 'hint'; cpw.classList.remove('good', 'bad'); return true; }
+        const same = pw.value === cpw.value;
+        h.textContent = same ? 'Passwords match.' : 'Passwords do not match yet.';
+        h.className = 'hint ' + (same ? 'ok' : 'no');
+        cpw.classList.toggle('good', same); cpw.classList.toggle('bad', !same);
+        return same;
+      }
+      pw.addEventListener('input', updateStrength);
+      cpw.addEventListener('input', updateMatch);
 
-    if (toggleConfirmPasswordBtn && confirmPasswordInput && toggleConfirmPasswordIcon) {
-      toggleConfirmPasswordBtn.addEventListener('click', function () {
-        const isPassword = confirmPasswordInput.getAttribute('type') === 'password';
-        confirmPasswordInput.setAttribute('type', isPassword ? 'text' : 'password');
-        toggleConfirmPasswordIcon.classList.toggle('bx-hide', !isPassword);
-        toggleConfirmPasswordIcon.classList.toggle('bx-show', isPassword);
-      });
-    }
+      function showError(msg) {
+        box.innerHTML = '';
+        const d = document.createElement('div'); d.className = 'alert-x'; d.setAttribute('role', 'alert');
+        d.innerHTML = '<i class="bx bx-error-circle"></i>';
+        const s = document.createElement('span'); s.textContent = msg; d.appendChild(s);
+        box.appendChild(d);
+        box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+      function setLoading(on) {
+        $('submitBtn').disabled = on;
+        $('btnText').textContent = on ? 'Creating account…' : 'Create account';
+        $('btnIcon').classList.toggle('d-none', on);
+        $('btnSpin').classList.toggle('d-none', !on);
+      }
 
-    // Real-time Password Matching Validation
-    const registerForm = document.getElementById('registerForm');
-    const alertBox = document.getElementById('passwordMismatchAlert');
+      /* Sent once with fetch so rate-limit and validation messages appear in place.
+         There is no fallback re-submit, so one click never creates two requests. */
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!form.reportValidity()) return;
+        box.innerHTML = '';
 
-    if (registerForm) {
-      registerForm.addEventListener('submit', function (e) {
-        if (passwordInput.value !== confirmPasswordInput.value) {
-          e.preventDefault();
-          alertBox.classList.remove('d-none');
-          alertBox.classList.add('d-flex');
-          confirmPasswordInput.focus();
-        } else {
-          alertBox.classList.add('d-none');
-          alertBox.classList.remove('d-flex');
+        if (pw.value !== cpw.value) {
+          showError('Passwords do not match. Please check both entries.');
+          cpw.focus();
+          return;
+        }
+
+        setLoading(true);
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        try {
+          const res = await fetch('/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'CSRF-Token': csrf },
+            body: new URLSearchParams(new FormData(form)).toString()
+          });
+
+          if (res.redirected) { window.location.href = res.url; return; }
+
+          let message = '';
+          const type = res.headers.get('content-type') || '';
+          if (type.includes('application/json')) {
+            const data = await res.json().catch(() => ({}));
+            message = data.error || data.message || '';
+          } else {
+            const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+            message = doc.getElementById('errorText')?.textContent.trim() || '';
+          }
+          if (!message) message = res.status === 429 ? 'Too many attempts. Please try again later.' : 'We could not create your account. Please check your details and try again.';
+          showError(message);
+        } catch (err) {
+          console.error(err);
+          showError('We could not reach the server. Check your connection and try again.');
+        } finally {
+          setLoading(false);
         }
       });
-    }
+    })();
   </script>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

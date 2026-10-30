@@ -5,320 +5,227 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="<%= csrfToken %>">
-  <title>Session Locked — Delle Cards</title>
+  <meta name="theme-color" content="#073a4a">
+  <title>Session locked | Delle Cards</title>
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/images/delleventures.jpeg">
+  <link rel="icon" type="image/jpeg" href="/images/delleventures.jpeg">
 
-  <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Bootstrap 5 & Boxicons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
   <style>
     :root {
-      --delle-teal: #0e697b;
-      --delle-teal-dark: #073a4a;
-      --delle-teal-soft: rgba(14, 105, 123, 0.08);
-      --delle-gold: #e5a000;
-      --delle-gold-hover: #c48c17;
-      --delle-dark-bg: #0b132b;
-      --delle-light-bg: #f8fafc;
-      --delle-border: rgba(15, 23, 42, 0.08);
+      --delle-teal: #0e697b; --delle-teal-hover: #0a5160; --delle-teal-deep: #073a4a; --delle-teal-soft: rgba(14,105,123,.08);
+      --delle-gold: #e5a000; --delle-gold-soft: rgba(229,160,0,.14);
+      --ink: #0f2530; --muted: #5d7079; --line: rgba(15,37,48,.14);
     }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased;
+           background: linear-gradient(160deg, var(--delle-teal-deep) 0%, var(--delle-teal) 100%); position: relative; overflow-x: hidden; }
+    .serif { font-family: 'Fraunces', Georgia, serif; font-weight: 600; letter-spacing: -.015em; }
+    :focus-visible { outline: 3px solid var(--delle-gold); outline-offset: 2px; }
 
-    body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background-color: var(--delle-light-bg);
-      color: #0f172a;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0;
-      padding: 0;
-      -webkit-font-smoothing: antialiased;
-    }
+    /* Background rings */
+    body::before, body::after { content: ''; position: fixed; border-radius: 50%; pointer-events: none; border: 1px solid rgba(229,160,0,.3); }
+    body::before { width: 640px; height: 640px; right: -220px; bottom: -260px; box-shadow: 0 0 0 56px rgba(229,160,0,.04), 0 0 0 120px rgba(229,160,0,.025); }
+    body::after { width: 280px; height: 280px; left: -100px; top: 20%; border-color: rgba(255,255,255,.1); }
 
-    /* Main Container Shell */
-    .auth-shell {
-      width: 100%;
-      min-height: 100vh;
-      display: flex;
-    }
+    .screen { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 1.6rem 1.25rem 1.5rem; }
+    .brand { align-self: flex-start; display: inline-flex; align-items: center; gap: .65rem; text-decoration: none; }
+    .brand img { width: 38px; height: 38px; border-radius: 11px; object-fit: cover; border: 1px solid rgba(255,255,255,.3); }
+    .brand .w { font-size: 1.35rem; color: #fff; } .brand .w span { color: var(--delle-gold); }
 
-    /* Left Showcase Hero Panel */
-    .auth-hero-panel {
-      background: linear-gradient(135deg, var(--delle-teal-dark) 0%, var(--delle-teal) 100%);
-      color: #ffffff;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 3.5rem;
-      position: relative;
-      overflow: hidden;
-    }
+    /* Clock */
+    .clock { text-align: center; color: #fff; margin: 2.2rem 0 1.8rem; }
+    .clock .t { font-size: clamp(3.2rem, 8vw, 5rem); line-height: 1; font-variant-numeric: tabular-nums; }
+    .clock .d { color: rgba(255,255,255,.75); font-size: 1rem; margin-top: .5rem; }
 
-    .auth-hero-panel::after {
-      content: '';
-      position: absolute;
-      right: -100px;
-      bottom: -100px;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(229, 160, 0, 0.25) 0%, rgba(255, 255, 255, 0) 70%);
-      pointer-events: none;
-    }
+    /* Card */
+    .card-lock { width: 100%; max-width: 410px; background: #fff; border-radius: 24px; padding: 2rem 1.9rem 1.6rem; box-shadow: 0 30px 80px rgba(3,28,38,.45); text-align: center; position: relative; }
+    .card-lock::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 5px; border-radius: 24px 24px 0 0; background: linear-gradient(90deg, var(--delle-teal-deep), var(--delle-teal), var(--delle-gold)); }
 
-    .hero-feature-badge {
-      background: rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 12px;
-      padding: 0.75rem 1.25rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.75rem;
-      max-width: 380px;
-    }
+    .av { position: relative; width: 78px; height: 78px; margin: 0 auto 1rem; }
+    .av .face { width: 100%; height: 100%; border-radius: 50%; background: var(--delle-teal); color: #fff; display: grid; place-items: center; font-size: 2rem; font-weight: 700; box-shadow: 0 0 0 5px var(--delle-teal-soft); }
+    .av .lk { position: absolute; right: -4px; bottom: -2px; width: 30px; height: 30px; border-radius: 50%; background: var(--delle-gold); color: #1d1500; display: grid; place-items: center; font-size: 1rem; border: 3px solid #fff; }
 
-    /* Right Form Control Panel */
-    .auth-form-panel {
-      width: 100%;
-      max-width: 520px;
-      background: #ffffff;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 3.5rem 3rem;
-      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.02);
-    }
+    .card-lock h1 { font-size: 1.55rem; margin: 0 0 .15rem; color: var(--delle-teal-deep); word-break: break-word; }
+    .card-lock .mail { color: var(--muted); font-size: .88rem; word-break: break-all; }
+    .why { display: inline-flex; align-items: center; gap: .4rem; background: var(--delle-gold-soft); color: #8a5f00; font-size: .8rem; font-weight: 600; padding: .28rem .8rem; border-radius: 999px; margin: .9rem 0 1.4rem; }
 
-    /* Custom Form Control Highlights */
-    .form-control {
-      border: 1px solid var(--delle-border);
-      padding: 0.75rem 1rem;
-      border-radius: 10px;
-      font-size: 0.925rem;
-      transition: all 0.2s ease;
-      background-color: #f8fafc;
-    }
+    .alert-x { display: flex; gap: .6rem; align-items: flex-start; background: rgba(194,37,92,.08); color: #8c1d46; border-radius: 12px; padding: .75rem 1rem; font-size: .88rem; font-weight: 500; margin-bottom: 1rem; text-align: left; }
+    .alert-x i { font-size: 1.2rem; flex: none; margin-top: 1px; }
 
-    .form-control:focus {
-      background-color: #ffffff;
-      border-color: var(--delle-teal);
-      box-shadow: 0 0 0 4px var(--delle-teal-soft);
-    }
+    .fld { text-align: left; margin-bottom: 1rem; }
+    .fld label { display: block; font-size: .86rem; font-weight: 600; margin-bottom: .4rem; }
+    .inp { position: relative; }
+    .inp > i.lead-ic { position: absolute; left: .95rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1.2rem; pointer-events: none; }
+    .inp input { width: 100%; height: 52px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 3rem 0 2.8rem; font-size: .98rem; background: #fff; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+    .inp input::placeholder { color: #93a3ab; }
+    .inp input:hover { border-color: rgba(14,105,123,.45); }
+    .inp input:focus { outline: 0; border-color: var(--delle-teal); box-shadow: 0 0 0 4px rgba(14,105,123,.15); }
+    .eye { position: absolute; right: .35rem; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: 0; background: transparent; color: var(--muted); border-radius: 10px; font-size: 1.3rem; display: grid; place-items: center; }
+    .eye:hover { background: var(--delle-teal-soft); color: var(--delle-teal); }
+    .caps { display: none; align-items: center; gap: .35rem; font-size: .8rem; color: #8a5f00; margin-top: .4rem; font-weight: 600; }
+    .caps.on { display: flex; }
 
-    .input-group-text {
-      background-color: #f8fafc;
-      border: 1px solid var(--delle-border);
-      border-right: none;
-      color: #64748b;
-      border-top-left-radius: 10px;
-      border-bottom-left-radius: 10px;
-    }
+    .btn-go { width: 100%; height: 54px; border: 0; border-radius: 12px; background: var(--delle-teal); color: #fff; font-weight: 700; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: .6rem; transition: background .15s, box-shadow .15s; }
+    .btn-go:hover:not(:disabled) { background: var(--delle-teal-hover); box-shadow: 0 10px 24px rgba(14,105,123,.28); }
+    .btn-go:disabled { opacity: .75; cursor: progress; }
 
-    .input-group .form-control {
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-    }
+    .alt { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+    .alt a { color: var(--delle-teal); font-weight: 700; text-decoration: none; margin-left: .25rem; } .alt a:hover { text-decoration: underline; }
 
-    /* Primary Action Buttons */
-    .btn-delle-teal {
-      background-color: var(--delle-teal);
-      color: #ffffff;
-      border: none;
-      border-radius: 10px;
-      font-weight: 600;
-      padding: 0.85rem 1.5rem;
-      transition: all 0.25s ease;
-    }
+    .note { margin-top: auto; padding-top: 1.6rem; color: rgba(255,255,255,.7); font-size: .82rem; text-align: center; display: flex; align-items: center; gap: .4rem; justify-content: center; }
+    .note i { color: var(--delle-gold); }
 
-    .btn-delle-teal:hover {
-      background-color: var(--delle-teal-dark);
-      color: #ffffff;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(14, 105, 123, 0.25);
-    }
-
-    .password-toggle-btn {
-      cursor: pointer;
-      background-color: #f8fafc;
-      border: 1px solid var(--delle-border);
-      border-left: none;
-      color: #64748b;
-      border-top-right-radius: 10px;
-      border-bottom-right-radius: 10px;
-    }
-
-    /* User Profile Avatar Pill */
-    .locked-user-badge {
-      background-color: var(--delle-teal-soft);
-      border: 1px solid rgba(14, 105, 123, 0.15);
-      border-radius: 12px;
-      padding: 0.85rem 1rem;
-    }
-
-    /* Mobile Responsive Tweak */
-    @media (max-width: 991.98px) {
-      .auth-hero-panel {
-        display: none;
-      }
-
-      .auth-form-panel {
-        max-width: 100%;
-        min-height: 100vh;
-      }
-    }
+    @media (max-width: 575px) { .brand { align-self: center; } .card-lock { padding: 1.7rem 1.3rem 1.4rem; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 </head>
 
 <body>
+  <div class="screen">
 
-  <div class="auth-shell">
+    <a href="/" class="brand" aria-label="Delle Cards">
+      <img src="/images/delleventures.jpeg" alt="">
+      <span class="w serif">Delle<span>Cards</span></span>
+    </a>
 
-    <!-- LEFT COLUMN: BRAND SHOWCASE HERO -->
-    <div class="auth-hero-panel">
-      <!-- Header Branding -->
-      <div class="d-flex align-items-center gap-2.5">
-        <!-- <img src="/images/delleventures.jpeg" alt="Delle Cards Logo" height="42"
-          class="rounded-3 shadow-sm border border-white border-opacity-20"> -->
-        <span class="fs-4 fw-bold text-white tracking-tight">Delle<span
-            style="color: var(--delle-gold);">Cards</span></span>
-      </div>
-
-      <!-- Center Hero Statement -->
-      <div class="my-auto py-5" style="z-index: 2; max-width: 480px;">
-        <span
-          class="badge rounded-pill bg-warning bg-opacity-20 text-warning px-3 py-1.5 fw-semibold mb-3 border border-warning border-opacity-25">
-          <i class="bx bx-lock-alt me-1"></i> Security Lockout Active
-        </span>
-        <h1 class="display-6 fw-bold text-white mb-3" style="line-height: 1.2;">
-          Your Session is Safely Locked.
-        </h1>
-        <p class="fs-6 text-white-50 mb-4 fw-normal">
-          Due to temporary inactivity, your session console has been paused to protect sensitive guest lists and check-in parameters.
-        </p>
-
-        <!-- Feature Pill -->
-        <div class="hero-feature-badge shadow-sm">
-          <div class="p-2 rounded-2 bg-warning bg-opacity-20 text-warning">
-            <i class="bx bx-shield-check fs-4"></i>
-          </div>
-          <div>
-            <div class="fw-bold text-white fs-7">State Preservation Active</div>
-            <div class="text-white-50 fs-8">Your account credentials and work state remain safely preserved.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Footer Info -->
-      <div class="text-white-50 small" style="z-index: 2;">
-        &copy; <%= new Date().getFullYear() %> Delle Ventures. All rights reserved.
-      </div>
+    <div class="clock" aria-hidden="true">
+      <div class="t serif" id="clockTime">--:--</div>
+      <div class="d" id="clockDate"></div>
     </div>
 
-    <!-- RIGHT COLUMN: UNLOCK FORM PANEL -->
-    <div class="auth-form-panel">
-
-      <!-- Mobile Top Logo -->
-      <div class="d-lg-none text-center mb-4">
-        <!-- <img src="/images/delleventures.jpeg" alt="Delle Cards Logo" height="40" class="rounded-3 border mb-2"> -->
-        <h4 class="fw-bold text-dark mb-0">Delle<span style="color: var(--delle-gold);">Cards</span></h4>
+    <main class="card-lock">
+      <div class="av">
+        <div class="face"><%= (typeof user !== 'undefined' && user && user.name) ? user.name.charAt(0).toUpperCase() : 'U' %></div>
+        <div class="lk"><i class="bx bx-lock-alt"></i></div>
       </div>
 
-      <div class="mb-4">
-        <h3 class="fw-bold text-dark mb-1">Welcome Back</h3>
-        <p class="text-muted small mb-0">Please verify your password to resume your session</p>
+      <h1 class="serif"><%= (typeof user !== 'undefined' && user && user.name) ? user.name : 'Welcome back' %></h1>
+      <% if (typeof user !== 'undefined' && user && user.email) { %><div class="mail"><%= user.email %></div><% } %>
+      <div class="why"><i class="bx bx-time-five"></i> Locked after a period of inactivity</div>
+
+      <div id="errorAlertContainer" aria-live="assertive">
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="alert-x" role="alert"><i class="bx bx-error-circle"></i><span id="errorText"><%= error %></span></div>
+        <% } %>
       </div>
 
-      <!-- Active Locked User Info Card -->
-      <% if (typeof user !== 'undefined' && user) { %>
-        <div class="locked-user-badge d-flex align-items-center gap-3 mb-4">
-          <div class="bg-teal text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-5 flex-shrink-0" style="width: 45px; height: 45px; background-color: var(--delle-teal);">
-            <%= user.name ? user.name.charAt(0).toUpperCase() : 'U' %>
-          </div>
-          <div class="overflow-hidden">
-            <div class="fw-bold text-dark text-truncate"><%= user.name || 'Authenticated User' %></div>
-          </div>
-        </div>
-      <% } %>
-
-      <!-- Flash Error Notification -->
-      <% if (typeof error !== 'undefined' && error) { %>
-        <div
-          class="alert alert-danger border-0 bg-danger-subtle text-danger d-flex align-items-center gap-2.5 small py-2.5 px-3 rounded-3 mb-4"
-          role="alert">
-          <i class="bx bx-error-circle fs-5 flex-shrink-0"></i>
-          <div class="fw-medium">
-            <%= error %>
-          </div>
-        </div>
-      <% } %>
-
-      <!-- Unlock Submission Form -->
-      <form action="/unlock" method="POST">
+      <form action="/unlock" method="POST" id="unlockForm" novalidate>
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-        <!-- Password Field with Interactive Toggle -->
-        <div class="mb-4">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <label class="form-label small fw-bold text-secondary mb-0">Enter Your Password</label>
-          </div>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bx bx-lock-alt fs-5"></i></span>
-            <input type="password" name="password" id="passwordInput" class="form-control" required
-              placeholder="••••••••" autofocus>
-            <button class="btn password-toggle-btn px-3 d-flex align-items-center" type="button"
-              id="togglePasswordBtn">
-              <i class="bx bx-hide fs-5" id="togglePasswordIcon"></i>
+        <div class="fld">
+          <label for="passwordInput">Enter your password to continue</label>
+          <div class="inp">
+            <i class="bx bx-lock-alt lead-ic"></i>
+            <input type="password" name="password" id="passwordInput" required placeholder="Your password" autocomplete="current-password" autofocus>
+            <button type="button" class="eye" id="togglePasswordBtn" aria-label="Show password" aria-pressed="false">
+              <i class="bx bx-hide" id="togglePasswordIcon"></i>
             </button>
           </div>
+          <div class="caps" id="capsHint"><i class="bx bx-up-arrow-alt"></i> Caps Lock is on</div>
         </div>
 
-        <!-- Submit Button -->
-        <button type="submit"
-          class="btn btn-delle-teal w-100 shadow-sm d-inline-flex align-items-center justify-content-center gap-2">
-          <span class="fw-semibold">Unlock Session</span>
-          <i class="bx bx-lock-open-alt fs-5"></i>
+        <button type="submit" id="submitBtn" class="btn-go">
+          <i class="bx bx-lock-open-alt fs-5" id="btnIcon"></i>
+          <span id="btnText">Unlock session</span>
+          <span class="spinner-border spinner-border-sm d-none" id="btnSpin"></span>
         </button>
       </form>
 
-      <!-- Bottom Alternative Link -->
-      <div class="text-center mt-4 pt-3 border-top">
-        <p class="small text-muted mb-0">
-          Not you? 
-          <a href="/logout" class="fw-bold text-danger text-decoration-none ms-1">Sign in with a different account</a>
-        </p>
-      </div>
+      <div class="alt">Not you?<a href="/logout">Sign in with a different account</a></div>
+    </main>
 
-    </div>
-
+    <div class="note"><i class="bx bx-shield-check"></i> Your guest lists and event work are safe while you are away.</div>
   </div>
 
-  <!-- Password Visibility Toggle Driver -->
   <script>
-    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
-    const passwordInput = document.getElementById('passwordInput');
-    const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+    (function () {
+      const $ = id => document.getElementById(id);
+      const form = $('unlockForm'), pw = $('passwordInput'), box = $('errorAlertContainer');
 
-    if (togglePasswordBtn && passwordInput && togglePasswordIcon) {
-      togglePasswordBtn.addEventListener('click', function () {
-        const isPassword = passwordInput.getAttribute('type') === 'password';
-        passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+      /* Clock */
+      function tickClock() {
+        const now = new Date();
+        $('clockTime').textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        $('clockDate').textContent = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+      }
+      tickClock(); setInterval(tickClock, 10000);
 
-        togglePasswordIcon.classList.toggle('bx-hide', !isPassword);
-        togglePasswordIcon.classList.toggle('bx-show', isPassword);
+      /* Show / hide password */
+      $('togglePasswordBtn').addEventListener('click', function () {
+        const show = pw.type === 'password';
+        pw.type = show ? 'text' : 'password';
+        this.setAttribute('aria-pressed', show);
+        this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        $('togglePasswordIcon').className = 'bx ' + (show ? 'bx-show' : 'bx-hide');
       });
-    }
-  </script>
 
+      /* Caps Lock hint */
+      const caps = e => $('capsHint').classList.toggle('on', e.getModifierState && e.getModifierState('CapsLock'));
+      pw.addEventListener('keydown', caps); pw.addEventListener('keyup', caps);
+      pw.addEventListener('blur', () => $('capsHint').classList.remove('on'));
+
+      function showError(msg) {
+        box.innerHTML = '';
+        const d = document.createElement('div'); d.className = 'alert-x'; d.setAttribute('role', 'alert');
+        d.innerHTML = '<i class="bx bx-error-circle"></i>';
+        const s = document.createElement('span'); s.textContent = msg; d.appendChild(s);
+        box.appendChild(d);
+      }
+      function setLoading(on) {
+        $('submitBtn').disabled = on;
+        $('btnText').textContent = on ? 'Unlocking…' : 'Unlock session';
+        $('btnIcon').classList.toggle('d-none', on);
+        $('btnSpin').classList.toggle('d-none', !on);
+      }
+
+      /* Sent once with fetch so wrong-password and rate-limit messages appear in place.
+         No fallback re-submit: a failed attempt is never counted twice. */
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!pw.value) { showError('Enter your password to continue.'); pw.focus(); return; }
+
+        box.innerHTML = '';
+        setLoading(true);
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        try {
+          const res = await fetch('/unlock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'CSRF-Token': csrf },
+            body: new URLSearchParams(new FormData(form)).toString()
+          });
+
+          if (res.redirected) { window.location.href = res.url; return; }
+
+          let message = '';
+          const type = res.headers.get('content-type') || '';
+          if (type.includes('application/json')) {
+            const data = await res.json().catch(() => ({}));
+            message = data.error || data.message || '';
+          } else {
+            const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+            message = doc.getElementById('errorText')?.textContent.trim() || '';
+          }
+          if (!message) message = res.status === 429 ? 'Too many unlock attempts. Please try again later.' : 'That password is not correct. Please try again.';
+
+          showError(message);
+          pw.value = ''; pw.focus();
+        } catch (err) {
+          console.error(err);
+          showError('We could not reach the server. Check your connection and try again.');
+        } finally {
+          setLoading(false);
+        }
+      });
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

@@ -14,6 +14,7 @@ const { setGlobalLocals, ensureAuthenticated } = require('./middleware/auth');
 const { enforceSessionFingerprint } = require('./middleware/sessionFingerprint');
 const { autoEncryptView } = require('./middleware/autoEncryptView');
 const { checkLockState } = require('./middleware/checkLock');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 const { sequelize } = require('./models');
 const eventRoutes = require('./routes/events');
@@ -73,6 +74,7 @@ app.use(morgan('dev'));
 app.engine('ejs', engine);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+app.set('trust proxy', 1); // Trusts the first proxy upstream
 
 // Public & Authentication Routes (No auth check required upfront)
 const authRoutes = require('./routes/auth');
@@ -102,6 +104,7 @@ app.get('/api/csrf-token', (req, res) => {
 // 5. Protected Routes Guard (Applies authentication requirements downstream)
 app.use(setGlobalLocals);
 app.use(ensureAuthenticated);
+app.use(apiLimiter); // Apply general API rate limiting to all authenticated routes
 
 app.get('/', async (req, res) => {
   try {
