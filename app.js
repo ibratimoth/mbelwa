@@ -213,7 +213,7 @@ app.use((err, req, res, next) => {
   res.status(500).send('Internal Server Error');
 });
 
-// Database Connection & Server Startup
+// Database Connection & Server Startu
 async function start() {
   try {
     await sequelize.authenticate();
