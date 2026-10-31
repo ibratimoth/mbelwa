@@ -106,9 +106,8 @@
         <div class="lk"><i class="bx bx-lock-alt"></i></div>
       </div>
 
-      <h1 class="serif"><%= (typeof user !== 'undefined' && user && user.name) ? user.name : 'Welcome back' %></h1>
-      <% if (typeof user !== 'undefined' && user && user.email) { %><div class="mail"><%= user.email %></div><% } %>
-      <div class="why"><i class="bx bx-time-five"></i> Locked after a period of inactivity</div>
+<h1 class="serif"><%= (typeof user !== 'undefined' && user && user.name) ? user.name : 'Welcome back' %></h1>
+<div class="why"><i class="bx bx-time-five"></i> Locked after a period of inactivity</div>
 
       <div id="errorAlertContainer" aria-live="assertive">
         <% if (typeof error !== 'undefined' && error) { %>
@@ -138,7 +137,12 @@
         </button>
       </form>
 
-      <div class="alt">Not you?<a href="/logout">Sign in with a different account</a></div>
+      <div class="alt">
+    Not you? 
+    <form action="/logout" method="POST" style="display:inline; margin:0;">
+        <button type="submit" style="background:none; border:none; color:inherit; text-decoration:underline; cursor:pointer; font:inherit; padding:0;">Sign in with a different account</button>
+    </form>
+</div>
     </main>
 
     <div class="note"><i class="bx bx-shield-check"></i> Your guest lists and event work are safe while you are away.</div>
