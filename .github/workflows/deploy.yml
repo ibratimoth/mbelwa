@@ -18,7 +18,7 @@ jobs:
         with:
           host: ${{ secrets.VM_IP1 }}
           username: ${{ secrets.VM_USERNAME1 }}
-          key: ${{ secrets.VM_SSH_KEY1 }} # Recommended over password
+          password: ${{ secrets.VM_SSH_KEY1 }} # Recommended over password
           port: 22
           script: |
             set -e # Exit immediately if any command fails
