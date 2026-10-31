@@ -1,8 +1,13 @@
 'use strict';
 const { user: User } = require('../models');
+const crypto = require('crypto');
 
 async function renderLogin(req, res) {
-  res.render('auth/login', { event: null, error: null });
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+  }
+  // csrfToken: req.session.csrfToken
+  res.render('auth/login', { event: null, error: null,csrfToken: req.session.csrfToken });
 }
 
 async function handleLogin(req, res, next) {

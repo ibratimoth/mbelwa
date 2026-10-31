@@ -18,9 +18,13 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 
 const { sequelize } = require('./models');
 const eventRoutes = require('./routes/events');
+const authRoutes = require('./routes/auth');
+const scannerRoutes = require('./routes/scanner');
+const attendeesRoutes = require('./routes/attendees');
 const smsQueue = require('./queues/smsQueue');
 const logger = require('./utils/logger');
 const crypto = require('crypto');
+const helmet = require('helmet');
 
 const { client, gateScanCounter, smsDispatchedCounter } = require('./utils/metrics');
 
@@ -32,7 +36,9 @@ if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
 }
 
-// 1. Core Body Parsers (Must be at the top)
+// 1. Core Body Parsers & Trust Proxy
+app.set('trust proxy', 1); // Crucial for reverse proxies (Apache/Nginx)
+// app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -42,30 +48,58 @@ app.use((req, res, next) => {
   next();
 });
 
-// 2. Secure Session Middleware
+// 2. Security Headers (CSP)
+// app.use(
+//   helmet.contentSecurityPolicy({
+//     directives: {
+//       defaultSrc: ["'self'"],
+//       scriptSrc: [
+//         "'self'", 
+//         "'unsafe-inline'", 
+//         "https://cdn.jsdelivr.net",
+//         "https://unpkg.com" // Required for QR code scanner
+//       ],
+//       styleSrc: [
+//         "'self'", 
+//         "'unsafe-inline'", 
+//         "https://cdn.jsdelivr.net", 
+//         "https://fonts.googleapis.com"
+//       ],
+//       fontSrc: [
+//         "'self'", 
+//         "https://fonts.gstatic.com", 
+//         "https://cdn.jsdelivr.net"
+//       ],
+//       imgSrc: ["'self'", "data:", "blob:"],
+//      connectSrc: [
+//         "'self'", 
+//         "http://localhost:3000", 
+//         "https://localhost:3000",
+//         "https://cdn.jsdelivr.net"
+//       ],
+//       frameAncestors: ["'none'"]
+//     }
+//   })
+// );
+
+// 3. Secure Session Middleware
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your_secret_key',
   resave: false,
   saveUninitialized: false,
-  name: 'delle.sid', // Obscures tech stack footprint
+  name: 'delle.sid',
   cookie: {
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    httpOnly: true,              // Prevents XSS cookie theft
-    secure: process.env.NODE_ENV === 'production', // Requires HTTPS in production
-    sameSite: 'strict'           // Prevents cross-site request forgery via cookies
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
   }
 }));
 
-// 3. 🔒 Session Hijacking Defense: Fingerprint Validation
-// Must run immediately after session loading, before any routes or view injectors
+// 4. Session Security & Fingerprinting
 app.use(enforceSessionFingerprint);
 
-// 4. Global View Token Injector
-app.use(autoEncryptView);
-
-app.use(checkLockState);
-
-// Static Assets & Logging
+// 5. Static Assets & Logging (Moved UP so static files bypass guards)
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(morgan('dev'));
@@ -74,14 +108,15 @@ app.use(morgan('dev'));
 app.engine('ejs', engine);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.set('trust proxy', 1); // Trusts the first proxy upstream
 
-// Public & Authentication Routes (No auth check required upfront)
-const authRoutes = require('./routes/auth');
-const scannerRoutes = require('./routes/scanner');
-
+// 6. Public & Authentication Routes (Mounted BEFORE checkLockState)
 app.use('/', authRoutes);
 app.use('/', scannerRoutes);
+
+// 7. Global View Token & Inactivity Lockout Guard 
+// (Runs only for authenticated session paths below this line)
+app.use(autoEncryptView);
+app.use(checkLockState);
 
 // Prometheus Metrics Endpoint & CSRF Token API
 app.get('/metrics', async (req, res) => {
@@ -101,7 +136,7 @@ app.get('/api/csrf-token', (req, res) => {
   res.json({ csrfToken: req.session.csrfToken });
 });
 
-// 5. Protected Routes Guard (Applies authentication requirements downstream)
+// 8. Protected Routes Guard
 app.use(setGlobalLocals);
 app.use(ensureAuthenticated);
 app.use(apiLimiter); // Apply general API rate limiting to all authenticated routes
@@ -110,19 +145,16 @@ app.get('/', async (req, res) => {
   try {
     const { event: Event } = require('./models');
 
-    // 1. Fetch raw plain objects using plain: true or .map(e => e.get({ plain: true }))
     const rawEvents = await Event.findAll({
       order: [['createdAt', 'DESC']],
       where: { user_id: req.session.userId }
     });
 
-    // 2. Normalize and format event dates directly in Node.js
     const events = rawEvents.map(event => {
       const eventData = event.get({ plain: true });
 
       let parsedDate = null;
       if (eventData.event_date) {
-        // Directly parse whether it's already a Date object or an ISO string
         const dateObj = new Date(eventData.event_date);
         if (!isNaN(dateObj.getTime())) {
           parsedDate = dateObj;
@@ -143,7 +175,6 @@ app.get('/', async (req, res) => {
       };
     });
 
-    // 3. Guard against session user being undefined
     const user = {
       name: req.session?.user?.name || 'User',
       email: req.session?.user?.email || 'unknown'
@@ -156,7 +187,6 @@ app.get('/', async (req, res) => {
   }
 });
 
-const attendeesRoutes = require('./routes/attendees');
 app.use('/', attendeesRoutes);
 app.use('/', eventRoutes);
 
@@ -189,7 +219,7 @@ async function start() {
     await sequelize.authenticate();
     logger.info('✅ Database connected');
 
-    app.listen(PORT, () => {
+    app.listen(PORT,'127.0.0.1', () => {
       logger.info(`🚀 Server running on http://localhost:${PORT}`);
     });
 
