@@ -37,7 +37,7 @@ if (process.env.SENTRY_DSN) {
 }
 
 // 1. Core Body Parsers & Trust Proxy
-app.set('trust proxy', 1); // Crucial for reverse proxies (Apache/Nginx)
+app.set('trust proxy', true); // Crucial for reverse proxies (Apache/Nginx)
 // app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -92,7 +92,7 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    sameSite: 'lax'
   }
 }));
 
